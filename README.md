@@ -76,7 +76,7 @@ Never move a published tag or replace released assets.
 
 ```sh
 bash -n install.sh
-python3 -m unittest discover -s tests -p test_install.py -v
+python3 -m unittest discover -s tests -p 'test_*.py' -v
 make check
 make release-assets
 ```

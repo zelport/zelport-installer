@@ -5,10 +5,10 @@ DIST_DIR ?= dist
 
 check:
 	bash -n install.sh
-	$(PYTHON) -m unittest discover -s tests -p test_install.py -v
+	$(PYTHON) -m unittest discover -s tests -p 'test_*.py' -v
 
 test:
-	$(PYTHON) -m unittest discover -s tests -p test_install.py -v
+	$(PYTHON) -m unittest discover -s tests -p 'test_*.py' -v
 
 release-assets:
 	$(PYTHON) scripts/build_release.py --output "$(DIST_DIR)"

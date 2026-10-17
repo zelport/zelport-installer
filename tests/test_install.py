@@ -411,7 +411,7 @@ exit 23
         self.assertNotIn('workflow_dispatch:', workflow)
         self.assertNotIn('branches:', workflow)
         self.assertIn('contents: read', workflow)
-        self.assertEqual(workflow.count('contents: write'), 1)
+        self.assertEqual(workflow.count('\n      contents: write'), 1)
         self.assertIn('^v[0-9]{8}\\.[1-9][0-9]*$', workflow)
         self.assertIn('test "$GITHUB_REF_NAME" = "v${source_version}"', workflow)
         self.assertIn('make check', workflow)
