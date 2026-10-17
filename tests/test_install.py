@@ -363,8 +363,8 @@ exit 23
                 constants[key] = value
         self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261017.1')
         self.assertEqual(constants['ZELPORT_RELEASE'], '0.10.0')
-        self.assertEqual(constants['ZELPORT_ARCH_REF'], '3209298c75e6390976f308a87377579a93a2e87e')
-        self.assertEqual(constants['ZELPORT_ARCH_SHA256'], 'bb0e206fc6c063f8f755b2dd1fc10e3814c62aa69fff7e522029edec432918b8')
+        self.assertEqual(constants['ZELPORT_ARCH_REF'], '4f57dc7487503ce5b1b3eb407b6bc2032f810aac')
+        self.assertEqual(constants['ZELPORT_ARCH_SHA256'], 'b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde')
 
     def test_active_installer_text_has_no_retired_language(self):
         text = (ROOT / 'install.sh').read_text().lower()
