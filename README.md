@@ -11,7 +11,7 @@ Do not run the installer as root or with `sudo`. On Arch Linux and Omarchy,
 dependencies. Run the installer as your regular user:
 
 ```sh
-curl -fsSL https://zelport.com/install.sh | bash
+bash install.sh
 ```
 
 ## Supported systems
@@ -36,23 +36,24 @@ bash install.sh --no-start
 bash install.sh --reinstall
 ```
 
-Downloaded application archives and Arch package recipes are checked before
-installation.
+The installer resolves the latest stable Zelport App release at runtime.
+Downloaded application archives and Arch package recipes are checked against
+that release's `SHA256SUMS` before installation.
 
 ## Uninstall
 
 Run the uninstaller as your regular user:
 
 ```sh
-curl -fsSL https://zelport.com/uninstall.sh | bash
+bash uninstall.sh
 ```
 
 The default configuration and state files are preserved. Use `--help` to list
 the available options or remove the preserved files explicitly with `--purge`:
 
 ```sh
-curl -fsSL https://zelport.com/uninstall.sh | bash -s -- --help
-curl -fsSL https://zelport.com/uninstall.sh | bash -s -- --purge
+bash uninstall.sh --help
+bash uninstall.sh --purge
 ```
 
 On Arch Linux and Omarchy, the uninstaller removes the package through `pacman`.
@@ -104,12 +105,9 @@ Tips:
 `ZELPORT_INSTALLER_VERSION` and `ZELPORT_UNINSTALLER_VERSION` use `YYYYMMDD.N`,
 where `N` starts at 1 and increments for another release on the same date. Both
 values match, and tags and releases prefix them with `v`. Every published script
-change, including an App or Arch recipe pin update, requires a new version.
-
-`ZELPORT_RELEASE` is numeric SemVer without a `v`. App tags and release URLs add
-the `v` prefix. Update the App version, reviewed Arch commit, and recipe checksum
-together only after the corresponding App artifacts and packaging commit exist.
-Never move a published tag or replace released assets.
+change requires a new version. App releases are resolved independently through
+the latest stable GitHub release and must remain immutable. Never move a
+published tag or replace released assets.
 
 Maintainer instructions are in [RELEASING.md](RELEASING.md).
 

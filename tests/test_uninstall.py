@@ -146,7 +146,9 @@ main "$@"
         self.assertIn("systemctl --user disable --now zelport.service", self.ops())
         self.assertIn("systemctl --user daemon-reload", self.ops())
         self.assertIn("Zelport was uninstalled successfully.", result.stdout)
-        self.assertIn(f"Configuration preserved at {self.config}", result.stdout)
+        self.assertIn(f"Configuration was preserved in {self.config.parent}/", result.stdout)
+        self.assertIn(f"Runtime state directory may remain at {self.state.parent}/", result.stdout)
+        self.assertNotIn("Use --purge", result.stdout)
         self.assertTrue(result.stdout.endswith("\n\n"))
 
     def test_purge_removes_default_configuration_and_state(self):
@@ -305,7 +307,7 @@ main "$@"
         )
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(direct.stdout, piped.stdout)
-        self.assertTrue(direct.stdout.startswith("Zelport Uninstaller 20261018.7\n"))
+        self.assertTrue(direct.stdout.startswith("Zelport Uninstaller 20261018.8\n"))
         self.assertNotIn(":::::::", direct.stdout)
         self.assertIn("--purge", direct.stdout)
 

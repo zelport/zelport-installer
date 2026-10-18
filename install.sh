@@ -2,12 +2,8 @@
 # Canonical source: https://github.com/zelport/zelport-installer/blob/main/install.sh
 # The website copy is generated only from a verified installer release asset.
 # Install Zelport without changing its configuration or installing desktop plugins.
-# Keep the release and reviewed Arch recipe pins together when publishing updates.
 
-ZELPORT_INSTALLER_VERSION=20261018.7
-ZELPORT_RELEASE=0.10.0
-ZELPORT_ARCH_REF=4f57dc7487503ce5b1b3eb407b6bc2032f810aac
-ZELPORT_ARCH_SHA256=b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde
+ZELPORT_INSTALLER_VERSION=20261018.8
 
 say() { printf '%s\n' "$*"; }
 
@@ -61,7 +57,7 @@ Usage:
 
 Options:
   --no-start     Install without managing the Zelport user service.
-  --reinstall    Reinstall Zelport $ZELPORT_RELEASE when it is already current.
+  --reinstall    Reinstall the latest Zelport release when it is already current.
   -h, --help     Show this help.
 
 Supported systems:
@@ -146,6 +142,31 @@ verify() {
     [[ $(digest "$1") == "$2" ]] || die "Checksum mismatch: ${1##*/}. Nothing from this download was installed."
 }
 
+resolve_latest_release() {
+    local checksum name extra candidate matches=0 recipe_matches=0
+    fetch 'https://github.com/zelport/zelport/releases/latest/download/SHA256SUMS' \
+        "$work_dir/SHA256SUMS"
+    while read -r checksum name extra; do
+        [[ -z ${extra:-} ]] || continue
+        if [[ $name =~ ^zelport_((0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))_linux_${cpu}\.tar\.gz$ ]]; then
+            candidate=${BASH_REMATCH[1]}
+            [[ $checksum =~ ^[0-9a-fA-F]{64}$ ]] || die 'Invalid checksum for the latest Zelport release.'
+            zelport_release=$candidate
+            release_asset=$name
+            release_checksum=$checksum
+            ((matches += 1))
+        elif [[ $name == PKGBUILD ]]; then
+            [[ $checksum =~ ^[0-9a-fA-F]{64}$ ]] || die 'Invalid checksum for the latest Arch package recipe.'
+            arch_recipe_checksum=$checksum
+            ((recipe_matches += 1))
+        fi
+    done < "$work_dir/SHA256SUMS"
+    [[ $matches == 1 ]] || die "The latest Zelport release does not contain exactly one linux_${cpu} archive."
+    if [[ $method == arch && $recipe_matches != 1 ]]; then
+        die 'The latest Zelport release does not contain exactly one checked Arch package recipe.'
+    fi
+}
+
 detect_distro() {
     # Read only identifiers; do not execute /etc/os-release as shell code.
     if [[ -r /etc/os-release ]]; then
@@ -204,20 +225,17 @@ EOF
 }
 
 install_binary() {
-    local asset="zelport_${ZELPORT_RELEASE}_linux_${cpu}.tar.gz"
-    local base="https://github.com/zelport/zelport/releases/download/v${ZELPORT_RELEASE}"
-    local expected members notice
-    fetch "$base/SHA256SUMS" "$work_dir/SHA256SUMS"
-    expected=$(awk -v name="$asset" '$2 == name {print $1}' "$work_dir/SHA256SUMS")
-    fetch "$base/$asset" "$work_dir/$asset"
-    verify "$work_dir/$asset" "$expected"
-    members=$(tar -tzf "$work_dir/$asset")
+    local base="https://github.com/zelport/zelport/releases/download/v${zelport_release}"
+    local members notice
+    fetch "$base/$release_asset" "$work_dir/$release_asset"
+    verify "$work_dir/$release_asset" "$release_checksum"
+    members=$(tar -tzf "$work_dir/$release_asset")
     [[ $(printf '%s\n' "$members" | awk '$0 == "zelport" {n++} END {print n+0}') == 1 ]] || die 'Archive must contain exactly one zelport binary.'
     # Stream only the binary to a chosen path, never extract archive paths to disk.
-    tar -xOzf "$work_dir/$asset" zelport > "$work_dir/zelport"
+    tar -xOzf "$work_dir/$release_asset" zelport > "$work_dir/zelport"
     [[ -s $work_dir/zelport ]] || die 'The downloaded binary is empty.'
     for notice in LICENSE THIRD_PARTY_NOTICES.txt; do
-        tar -xOzf "$work_dir/$asset" "$notice" > "$work_dir/$notice"
+        tar -xOzf "$work_dir/$release_asset" "$notice" > "$work_dir/$notice"
         [[ -s $work_dir/$notice ]] || die "Missing release notice: $notice"
     done
     mkdir -p "$data_dir"
@@ -233,12 +251,12 @@ install_binary() {
 }
 
 install_arch() {
-    fetch "https://raw.githubusercontent.com/zelport/zelport/${ZELPORT_ARCH_REF}/contrib/archlinux/PKGBUILD" "$work_dir/PKGBUILD"
-    verify "$work_dir/PKGBUILD" "$ZELPORT_ARCH_SHA256"
     local pkgver pkgrel installed
+    fetch "https://github.com/zelport/zelport/releases/download/v${zelport_release}/PKGBUILD" "$work_dir/PKGBUILD"
+    verify "$work_dir/PKGBUILD" "$arch_recipe_checksum"
     pkgver=$(sed -n 's/^pkgver=//p' "$work_dir/PKGBUILD")
     pkgrel=$(sed -n 's/^pkgrel=//p' "$work_dir/PKGBUILD")
-    [[ $pkgver =~ ^[a-zA-Z0-9.+_]+$ && $pkgrel =~ ^[0-9]+$ ]] || die 'Invalid pinned Arch package version.'
+    [[ $pkgver == "$zelport_release" && $pkgrel =~ ^[0-9]+$ ]] || die 'The latest Arch package recipe does not match the latest Zelport release.'
     installed=$(pacman -Q zelport 2>/dev/null || true)
     if [[ $installed == "zelport $pkgver-$pkgrel" ]] && pacman -Qk zelport >/dev/null 2>&1; then
         if [[ $reinstall == no ]]; then
@@ -246,7 +264,7 @@ install_arch() {
             already_installed=yes
             return
         fi
-        progress "Reinstalling Zelport $pkgver-$pkgrel from the verified Arch package recipe."
+        progress "Reinstalling Zelport $pkgver-$pkgrel from the latest Arch package recipe."
     fi
     command -v makepkg >/dev/null 2>&1 || die 'Install Arch build tools first: sudo pacman -S --needed base-devel git'
     changed=yes
@@ -285,6 +303,7 @@ main() {
     local config_file config_tip manual_start privileges uid root=no
     local cpu binary data_dir was_active=no use_systemd=no changed=no unit_changed=no installed_version
     local systemd_status omarchy=no already_installed=no progress_started=no
+    local zelport_release='' release_asset='' release_checksum='' arch_recipe_checksum=''
     for arg in "$@"; do
         case "$arg" in
             --help|-h) usage; return 0 ;;
@@ -410,18 +429,19 @@ main() {
         say "  Service manager: systemd user manager $systemd_status"
     fi
     say ''
-    if [[ $method == binary ]]; then
-        installed_version=''
-        if [[ -x $binary ]]; then installed_version=$("$binary" --version 2>/dev/null || true); fi
-        if [[ $installed_version == "zelport $ZELPORT_RELEASE (built "*")" && $reinstall == no ]]; then
-            already_installed_notice "$ZELPORT_RELEASE"
-            return 0
-        fi
-    fi
     # The temporary directory is removed even when verification or installation fails.
     work_dir=$(mktemp -d "${TMPDIR:-/tmp}/zelport-install.XXXXXX")
     install_tmp=''
     trap cleanup EXIT
+    resolve_latest_release
+    if [[ $method == binary ]]; then
+        installed_version=''
+        if [[ -x $binary ]]; then installed_version=$("$binary" --version 2>/dev/null || true); fi
+        if [[ $installed_version == "zelport $zelport_release (built "*")" && $reinstall == no ]]; then
+            already_installed_notice "$zelport_release"
+            return 0
+        fi
+    fi
     if [[ $use_systemd == yes ]]; then
         if [[ $method == binary ]]; then
             unit_dir="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
@@ -445,10 +465,10 @@ main() {
         install_arch
         if [[ $already_installed == yes ]]; then return 0; fi
     else
-        if [[ $installed_version == "zelport $ZELPORT_RELEASE (built "*")" ]]; then
-            progress "Reinstalling Zelport $ZELPORT_RELEASE from the $cpu release archive."
+        if [[ $installed_version == "zelport $zelport_release (built "*")" ]]; then
+            progress "Reinstalling Zelport $zelport_release from the $cpu release archive."
         else
-            progress "Installing Zelport $ZELPORT_RELEASE from the $cpu release archive."
+            progress "Installing Zelport $zelport_release from the $cpu release archive."
         fi
         install_binary
         changed=yes
@@ -465,7 +485,7 @@ main() {
     fi
     say ''
     say 'Result:'
-    installation_success_notice "$ZELPORT_RELEASE" "$binary"
+    installation_success_notice "$zelport_release" "$binary"
     if [[ $use_systemd == yes ]]; then
         success_message '  Zelport is running and enabled for your user session.'
     elif [[ $start == yes ]]; then

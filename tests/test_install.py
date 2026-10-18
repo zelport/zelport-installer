@@ -24,7 +24,7 @@ EXPECTED_BANNER = """
   ::::::::::                                                  ::::
   :::::::                                                     ::::
 
-Zelport Installer 20261018.7
+Zelport Installer 20261018.8
 """
 
 
@@ -35,8 +35,14 @@ class InstallTests(unittest.TestCase):
         self.home = Path(self.tmp.name)
         self.assets = self.home / 'assets'
         self.assets.mkdir()
-        self.payload = b'#!/bin/sh\necho "zelport 0.10.0 (built fixture)"\n'
-        self.archive = self.assets / 'zelport_0.10.0_linux_amd64.tar.gz'
+        self.write_release('0.10.0')
+        self.config = self.home / '.config/zelport/config.json'
+        self.config.parent.mkdir(parents=True)
+        self.config.write_text('preserve this configuration')
+
+    def write_release(self, version, cpu='amd64'):
+        self.payload = f'#!/bin/sh\necho "zelport {version} (built fixture)"\n'.encode()
+        self.archive = self.assets / f'zelport_{version}_linux_{cpu}.tar.gz'
         with tarfile.open(self.archive, 'w:gz') as tar:
             member = tarfile.TarInfo('zelport')
             member.mode = 0o755
@@ -46,16 +52,14 @@ class InstallTests(unittest.TestCase):
                 member = tarfile.TarInfo(name)
                 member.size = 7
                 tar.addfile(member, io.BytesIO(b'license'))
+        (self.assets / 'PKGBUILD').write_text(f'pkgver={version}\npkgrel=1\n')
         self.write_checksum()
-        (self.assets / 'PKGBUILD').write_text('pkgver=0.10.0\npkgrel=1\n')
-        self.arch_fixture_sha256 = hashlib.sha256((self.assets / 'PKGBUILD').read_bytes()).hexdigest()
-        self.config = self.home / '.config/zelport/config.json'
-        self.config.parent.mkdir(parents=True)
-        self.config.write_text('preserve this configuration')
 
     def write_checksum(self):
         digest = hashlib.sha256(self.archive.read_bytes()).hexdigest()
-        (self.assets / 'SHA256SUMS').write_text(digest + '  ' + self.archive.name + '\n')
+        recipe_digest = hashlib.sha256((self.assets / 'PKGBUILD').read_bytes()).hexdigest()
+        (self.assets / 'SHA256SUMS').write_text(
+            digest + '  ' + self.archive.name + '\n' + recipe_digest + '  PKGBUILD\n')
 
     def run_installer(self, args=(), os_name='Linux', distro='debian', arch='x86_64',
                       session=True, active=False, collision=False, uid=1000, start_ok=True,
@@ -64,7 +68,6 @@ class InstallTests(unittest.TestCase):
         self.log = self.home / 'operations'
         program = r'''
 source "$INSTALLER"
-ZELPORT_ARCH_SHA256="$TEST_ARCH_SHA256"
 uname() { if [[ ${1:-} == -m ]]; then printf '%s\n' "$TEST_ARCH"; else printf '%s\n' "$TEST_OS"; fi; }
 id() { printf '%s\n' "$TEST_UID"; }
 detect_distro() { printf '%s\n' "$TEST_DISTRO"; }
@@ -110,7 +113,6 @@ main "$@"
                'TEST_SESSION': 'yes' if session else 'no', 'TEST_ACTIVE': 'yes' if active else 'no',
                'TEST_COLLISION': 'yes' if collision else 'no', 'TEST_START_OK': 'yes' if start_ok else 'no',
                'TEST_READONLY_CACHE': 'yes' if readonly_cache else 'no',
-               'TEST_ARCH_SHA256': self.arch_fixture_sha256,
                'TEST_PACKAGE_VERSION': package_version,
                'TEST_ENABLED': 'yes' if enabled else 'no',
                'TEST_PACKAGE_COMPLETE': 'yes' if package_complete else 'no'}
@@ -219,6 +221,21 @@ main "$@"
         self.assertIn('ExecStart=%h/.local/bin/zelport', unit.read_text())
         self.assertIn('systemctl --user start zelport.service', self.ops())
         self.assertIn('systemctl --user enable zelport.service', self.ops())
+
+    def test_installs_the_release_named_by_the_latest_manifest(self):
+        self.write_release('0.10.1')
+        result = self.run_installer(args=['--no-start'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Installing Zelport 0.10.1 from the amd64 release archive.', result.stdout)
+        self.assertIn('releases/download/v0.10.1/zelport_0.10.1_linux_amd64.tar.gz', self.ops())
+        self.assertEqual((self.home / '.local/bin/zelport').read_bytes(), self.payload)
+
+    def test_latest_manifest_rejects_nonstable_versions(self):
+        self.write_release('0.10.1-rc.1')
+        result = self.run_installer(args=['--no-start'])
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('does not contain exactly one linux_amd64 archive', result.stderr)
+        self.assertFalse((self.home / '.local/bin/zelport').exists())
 
     def test_no_systemd_installs_without_service(self):
         result = self.run_installer(session=False)
@@ -338,7 +355,7 @@ main "$@"
         self.assertIn('systemctl --user stop zelport.service', self.ops())
         self.assertNotIn('systemctl --user enable', self.ops())
 
-    def test_arch_uses_verified_makepkg_recipe(self):
+    def test_arch_uses_latest_release_makepkg_recipe(self):
         result = self.run_installer(distro='arch', args=['--no-start'])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('makepkg --syncdeps --install', self.ops())
@@ -425,7 +442,7 @@ exit 23
         result = self.run_installer(active=True, enabled=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn('systemctl --user enable ', self.ops())
-        self.assertNotIn('fetch ', self.ops())
+        self.assertNotIn('linux_amd64.tar.gz', self.ops())
         self.assertNotIn('restart ', self.ops())
         self.assertNotIn('daemon-reload', self.ops())
         self.assertIn('If you want to reinstall Zelport, run this installer with --reinstall.', result.stdout)
@@ -436,7 +453,7 @@ exit 23
         self.log.unlink()
         result = self.run_installer()
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertNotIn('fetch ', self.ops())
+        self.assertNotIn('linux_amd64.tar.gz', self.ops())
         self.assertNotIn('systemctl --user start zelport.service', self.ops())
         self.assertFalse((self.home / '.config/systemd/user/zelport.service').exists())
         self.assertIn('If you want to reinstall Zelport, run this installer with --reinstall.', result.stdout)
@@ -453,7 +470,7 @@ exit 23
             distro='arch', package_version='0.10.0-1', args=['--reinstall', '--no-start']
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('Reinstalling Zelport 0.10.0-1 from the verified Arch package recipe.', result.stdout)
+        self.assertIn('Reinstalling Zelport 0.10.0-1 from the latest Arch package recipe.', result.stdout)
         self.assertIn('makepkg --syncdeps --install', self.ops())
 
     def test_incomplete_arch_package_is_reinstalled(self):
@@ -479,8 +496,7 @@ exit 23
         self.assertIn('restart ', self.ops())
 
     def test_arm64_uses_arm64_asset(self):
-        self.archive = self.archive.rename(self.assets / 'zelport_0.10.0_linux_arm64.tar.gz')
-        self.write_checksum()
+        self.write_release('0.10.0', cpu='arm64')
         result = self.run_installer(arch='aarch64', args=['--no-start'])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('linux_arm64.tar.gz', self.ops())
@@ -506,23 +522,23 @@ exit 23
         piped = subprocess.run(['bash', '-s', '--', '--help'], input=(ROOT / 'install.sh').read_text(), text=True, capture_output=True)
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(piped.returncode, 0, piped.stderr)
-        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.7\n\nUsage:\n'))
+        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.8\n\nUsage:\n'))
         self.assertNotIn(':::::::', piped.stdout)
         self.assertIn('Options:', piped.stdout)
         self.assertIn('Supported systems:', piped.stdout)
         self.assertIn('--reinstall', piped.stdout)
         self.assertEqual(direct.stdout, piped.stdout)
 
-    def test_versions_and_reviewed_arch_pin_are_exact(self):
+    def test_script_versions_match_without_fixed_app_release_pins(self):
         constants = {}
         for line in (ROOT / 'install.sh').read_text().splitlines():
             if line.startswith('ZELPORT_') and '=' in line:
                 key, value = line.split('=', 1)
                 constants[key] = value
-        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.7')
-        self.assertEqual(constants['ZELPORT_RELEASE'], '0.10.0')
-        self.assertEqual(constants['ZELPORT_ARCH_REF'], '4f57dc7487503ce5b1b3eb407b6bc2032f810aac')
-        self.assertEqual(constants['ZELPORT_ARCH_SHA256'], 'b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde')
+        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.8')
+        self.assertNotIn('ZELPORT_RELEASE', constants)
+        self.assertNotIn('ZELPORT_ARCH_REF', constants)
+        self.assertNotIn('ZELPORT_ARCH_SHA256', constants)
 
     def test_active_installer_text_has_no_retired_language(self):
         text = (ROOT / 'install.sh').read_text().lower()

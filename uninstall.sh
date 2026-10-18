@@ -3,7 +3,7 @@
 # Remove only Zelport files owned by the detected installation method.
 # Preserve user configuration and state unless --purge is explicitly requested.
 
-ZELPORT_UNINSTALLER_VERSION=20261018.7
+ZELPORT_UNINSTALLER_VERSION=20261018.8
 
 say() { printf '%s\n' "$*"; }
 
@@ -375,9 +375,8 @@ main() {
     if [[ $purge == yes ]]; then
         say '  Default configuration and state files were removed where present.'
     else
-        say "  Configuration preserved at $config_file"
-        say "  State preserved at $state_file"
-        say '  Use --purge to remove these files.'
+        say "  Configuration was preserved in ${config_file%/*}/"
+        say "  Runtime state directory may remain at ${state_file%/*}/"
     fi
     if command -v omarchy-version >/dev/null 2>&1 && omarchy-version >/dev/null 2>&1; then omarchy=yes; fi
     if [[ $omarchy == yes ]]; then

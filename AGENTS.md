@@ -8,11 +8,11 @@ the website copies directly or synchronize them from an untagged branch.
 
 Use `YYYYMMDD.N` for `ZELPORT_INSTALLER_VERSION` and
 `ZELPORT_UNINSTALLER_VERSION`, which must match, and `vYYYYMMDD.N` for installer
-tags and releases. Use numeric SemVer for `ZELPORT_RELEASE`. App tags and URLs
-add the `v` prefix. Change both script versions for every published script
-change. Keep the App version, immutable Arch recipe commit, and measured recipe
-SHA-256 together. Never fabricate a checksum or resolve a moving App or package
-release from the installer.
+tags and releases. Change both script versions for every published script
+change. Resolve the latest stable App release at runtime from its published
+`SHA256SUMS`, validate its numeric SemVer, and download remaining assets from
+that exact version tag. Never fabricate a checksum or use draft or prerelease
+assets.
 
 Preserve existing Zelport configuration and custom services. Manage only the
 Zelport service owned by the selected installation method. Never stop unrelated
