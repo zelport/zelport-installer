@@ -3,7 +3,7 @@
 # Remove only Zelport files owned by the detected installation method.
 # Preserve user configuration and state unless --purge is explicitly requested.
 
-ZELPORT_UNINSTALLER_VERSION=20261018.6
+ZELPORT_UNINSTALLER_VERSION=20261018.7
 
 say() { printf '%s\n' "$*"; }
 
@@ -381,7 +381,7 @@ main() {
     fi
     if command -v omarchy-version >/dev/null 2>&1 && omarchy-version >/dev/null 2>&1; then omarchy=yes; fi
     if [[ $omarchy == yes ]]; then
-        say '  The separate Omarchy plugin was not removed.'
+        say '  Remove the separate Omarchy plugin, if installed: omarchy plugin remove zelport.integration'
     fi
     say ''
 }

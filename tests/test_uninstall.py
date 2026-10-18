@@ -62,6 +62,7 @@ class UninstallTests(unittest.TestCase):
         fragment="",
         package_version="",
         other_install=False,
+        omarchy=False,
         sudo_user=None,
     ):
         self.log = self.home / "operations"
@@ -97,6 +98,11 @@ main "$@"
             binary.write_text("#!/bin/sh\nexit 0\n")
             binary.chmod(0o755)
             path = str(other) + ":" + path
+        if omarchy:
+            omarchy_version = self.home / ".local/bin/omarchy-version"
+            omarchy_version.parent.mkdir(parents=True, exist_ok=True)
+            omarchy_version.write_text("#!/bin/sh\necho 4.0.4\n")
+            omarchy_version.chmod(0o755)
         env = {
             **os.environ,
             "HOME": str(self.home),
@@ -256,6 +262,21 @@ main "$@"
         self.assertIn("systemctl --user disable --now zelport.service", self.ops())
         self.assertIn("sudo pacman -R zelport", self.ops())
 
+    def test_omarchy_plugin_removal_hint_is_only_printed_on_omarchy(self):
+        self.create_binary_install()
+        regular = self.run_uninstaller()
+        self.assertEqual(regular.returncode, 0, regular.stderr)
+        self.assertNotIn("omarchy plugin remove", regular.stdout)
+
+        self.create_binary_install()
+        omarchy = self.run_uninstaller(omarchy=True)
+        self.assertEqual(omarchy.returncode, 0, omarchy.stderr)
+        self.assertIn(
+            "Remove the separate Omarchy plugin, if installed: "
+            "omarchy plugin remove zelport.integration",
+            omarchy.stdout,
+        )
+
     def test_root_is_reported_and_no_files_are_removed(self):
         self.create_binary_install()
         result = self.run_uninstaller(uid=0, sudo_user="user")
@@ -284,7 +305,7 @@ main "$@"
         )
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(direct.stdout, piped.stdout)
-        self.assertTrue(direct.stdout.startswith("Zelport Uninstaller 20261018.6\n"))
+        self.assertTrue(direct.stdout.startswith("Zelport Uninstaller 20261018.7\n"))
         self.assertNotIn(":::::::", direct.stdout)
         self.assertIn("--purge", direct.stdout)
 
