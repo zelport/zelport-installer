@@ -6,21 +6,10 @@ installation guidance and tips.
 
 ## Install
 
-Download the latest release, verify it, inspect it, and run it as your regular
-user:
+Run the installer as your regular user:
 
 ```sh
-curl -fsSLO https://github.com/zelport/zelport-installer/releases/latest/download/install.sh
-curl -fsSLO https://github.com/zelport/zelport-installer/releases/latest/download/SHA256SUMS
-
-if command -v sha256sum >/dev/null 2>&1; then
-  sha256sum --check SHA256SUMS
-else
-  shasum -a 256 --check SHA256SUMS
-fi
-
-less install.sh
-bash install.sh
+curl -fsSL https://zelport.com/install.sh | bash
 ```
 
 Do not run the installer with `sudo`. On Arch Linux and Omarchy, `makepkg` may
@@ -48,9 +37,7 @@ bash install.sh --reinstall
 ```
 
 Downloaded application archives and Arch package recipes are checked before
-installation. `SHA256SUMS` confirms that `install.sh` matches the manifest from
-the same GitHub release; because both files come from the same source, this is
-an integrity check rather than an independent signature.
+installation.
 
 ## Versioning
 
