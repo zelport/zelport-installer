@@ -7,7 +7,7 @@ import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VERSION_RE = re.compile(r"[0-9]{8}\.[1-9][0-9]*")
+VERSION_RE = re.compile(r"[0-9]{4}\.(?:0[1-9]|1[0-2])\.(?:0|[1-9][0-9]*)")
 
 
 def script_version(path: Path, variable: str) -> str:

@@ -102,12 +102,13 @@ Tips:
 
 ## Versioning
 
-`ZELPORT_INSTALLER_VERSION` and `ZELPORT_UNINSTALLER_VERSION` use `YYYYMMDD.N`,
-where `N` starts at 1 and increments for another release on the same date. Both
-values match, and tags and releases prefix them with `v`. Every published script
-change requires a new version. App releases are resolved independently through
-the latest stable GitHub release and must remain immutable. Never move a
-published tag or replace released assets.
+`ZELPORT_INSTALLER_VERSION` and `ZELPORT_UNINSTALLER_VERSION` use
+`YYYY.MM.MICRO`. `MICRO` starts at `0` each month and increments for every
+additional release in that month. Both values match, and tags and releases
+prefix them with `v`, for example `v2026.10.0`. Every published script change
+requires a new version. App releases use SemVer and are resolved independently
+through the latest stable GitHub release. Never move a published tag or replace
+released assets.
 
 Maintainer instructions are in [RELEASING.md](RELEASING.md).
 

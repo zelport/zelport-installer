@@ -3,7 +3,7 @@ name: Release installer
 on:
   push:
     tags:
-      - 'v[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].[0-9]+'
+      - 'v[0-9][0-9][0-9][0-9].[0-1][0-9].[0-9]+'
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]{8}\.[1-9][0-9]*$ ]]
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]{4}\.(0[1-9]|1[0-2])\.(0|[1-9][0-9]*)$ ]]
           test "$GITHUB_REF_NAME" = "v$(make --no-print-directory version)"
       - name: Verify and build release assets
         run: make release-ready

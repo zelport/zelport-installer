@@ -6,13 +6,14 @@ in English.
 in `zelport-web` are generated from exact verified release assets. Never edit
 the website copies directly or synchronize them from an untagged branch.
 
-Use `YYYYMMDD.N` for `ZELPORT_INSTALLER_VERSION` and
-`ZELPORT_UNINSTALLER_VERSION`, which must match, and `vYYYYMMDD.N` for installer
-tags and releases. Change both script versions for every published script
-change. Resolve the latest stable App release at runtime from its published
-`SHA256SUMS`, validate its numeric SemVer, and download remaining assets from
-that exact version tag. Never fabricate a checksum or use draft or prerelease
-assets.
+Use `YYYY.MM.MICRO` for `ZELPORT_INSTALLER_VERSION` and
+`ZELPORT_UNINSTALLER_VERSION`, which must match, and `vYYYY.MM.MICRO` for
+installer tags and releases. `MICRO` starts at `0` each month and increments for
+each additional release in that month. Change both script versions for every
+published script change. Resolve the latest stable App release at runtime from
+its published `SHA256SUMS`, validate its numeric SemVer, and download remaining
+assets from that exact version tag. Never fabricate a checksum or use draft or
+prerelease assets.
 
 Preserve existing Zelport configuration and custom services. Manage only the
 Zelport service owned by the selected installation method. Never stop unrelated

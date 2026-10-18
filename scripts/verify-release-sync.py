@@ -9,7 +9,7 @@ import re
 import tempfile
 
 
-VERSION_RE = re.compile(r"^[0-9]{8}\.[1-9][0-9]*$")
+VERSION_RE = re.compile(r"^[0-9]{4}\.(?:0[1-9]|1[0-2])\.(?:0|[1-9][0-9]*)$")
 INSTALLER_VERSION_RE = re.compile(r"^ZELPORT_INSTALLER_VERSION=([^\r\n]+)$", re.MULTILINE)
 UNINSTALLER_VERSION_RE = re.compile(r"^ZELPORT_UNINSTALLER_VERSION=([^\r\n]+)$", re.MULTILINE)
 MANIFEST_RE = re.compile(
@@ -29,7 +29,7 @@ def regular_file(path: Path, label: str) -> None:
 
 def verify_assets(release_dir: Path, version: str) -> tuple[bytes, str]:
     if not VERSION_RE.fullmatch(version):
-        raise ValueError("version must use YYYYMMDD.N without a v prefix")
+        raise ValueError("version must use YYYY.MM.MICRO without a v prefix")
     if release_dir.is_symlink() or not release_dir.is_dir():
         raise ValueError("release directory must be a real directory")
 

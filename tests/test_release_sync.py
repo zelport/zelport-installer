@@ -9,7 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / 'scripts/verify-release-sync.py'
-VERSION = '20261018.2'
+VERSION = '2026.10.2'
 
 
 class ReleaseSyncTests(unittest.TestCase):
@@ -19,8 +19,8 @@ class ReleaseSyncTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.release = self.root / 'release'
         self.release.mkdir()
-        self.script = b'#!/usr/bin/env bash\nZELPORT_INSTALLER_VERSION=20261018.2\nprintf ok\\n\n'
-        self.uninstaller = b'#!/usr/bin/env bash\nZELPORT_UNINSTALLER_VERSION=20261018.2\nprintf ok\\n\n'
+        self.script = b'#!/usr/bin/env bash\nZELPORT_INSTALLER_VERSION=2026.10.2\nprintf ok\\n\n'
+        self.uninstaller = b'#!/usr/bin/env bash\nZELPORT_UNINSTALLER_VERSION=2026.10.2\nprintf ok\\n\n'
         (self.release / 'install.sh').write_bytes(self.script)
         (self.release / 'uninstall.sh').write_bytes(self.uninstaller)
         self.write_manifest()
@@ -57,7 +57,7 @@ class ReleaseSyncTests(unittest.TestCase):
         self.assertEqual(output['release_sha256'], expected)
         self.assertEqual(output['website_sha256'], hashlib.sha256(b'old installer\n').hexdigest())
         self.assertEqual(output['result_sha256'], expected)
-        self.assertEqual(output['commit_message'], 'chore(installer): sync v20261018.2')
+        self.assertEqual(output['commit_message'], 'chore(installer): sync v2026.10.2')
 
     def test_identical_website_bytes_are_idempotent(self):
         self.website.write_bytes(self.script)
@@ -108,8 +108,8 @@ class ReleaseSyncTests(unittest.TestCase):
         self.assertEqual(self.website.read_bytes(), b'old installer\n')
 
     def test_release_version_must_match_argument_and_script_once(self):
-        self.assertNotEqual(self.run_helper('20261018.3').returncode, 0)
-        (self.release / 'install.sh').write_bytes(self.script + b'ZELPORT_INSTALLER_VERSION=20261018.2\n')
+        self.assertNotEqual(self.run_helper('2026.10.3').returncode, 0)
+        (self.release / 'install.sh').write_bytes(self.script + b'ZELPORT_INSTALLER_VERSION=2026.10.2\n')
         self.script = (self.release / 'install.sh').read_bytes()
         self.write_manifest()
         self.assertNotEqual(self.run_helper().returncode, 0)

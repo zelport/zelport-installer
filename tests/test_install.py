@@ -24,7 +24,7 @@ EXPECTED_BANNER = """
   ::::::::::                                                  ::::
   :::::::                                                     ::::
 
-Zelport Installer 20261018.8
+Zelport Installer 2026.10.0
 """
 
 
@@ -522,7 +522,7 @@ exit 23
         piped = subprocess.run(['bash', '-s', '--', '--help'], input=(ROOT / 'install.sh').read_text(), text=True, capture_output=True)
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(piped.returncode, 0, piped.stderr)
-        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.8\n\nUsage:\n'))
+        self.assertTrue(piped.stdout.startswith('Zelport Installer 2026.10.0\n\nUsage:\n'))
         self.assertNotIn(':::::::', piped.stdout)
         self.assertIn('Options:', piped.stdout)
         self.assertIn('Supported systems:', piped.stdout)
@@ -535,7 +535,7 @@ exit 23
             if line.startswith('ZELPORT_') and '=' in line:
                 key, value = line.split('=', 1)
                 constants[key] = value
-        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.8')
+        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '2026.10.0')
         self.assertNotIn('ZELPORT_RELEASE', constants)
         self.assertNotIn('ZELPORT_ARCH_REF', constants)
         self.assertNotIn('ZELPORT_ARCH_SHA256', constants)
@@ -609,12 +609,12 @@ exit 23
 
     def test_release_workflow_is_tag_only_and_minimally_privileged(self):
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
-        self.assertIn("'v[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].[0-9]+'", workflow)
+        self.assertIn("'v[0-9][0-9][0-9][0-9].[0-1][0-9].[0-9]+'", workflow)
         self.assertNotIn('workflow_dispatch:', workflow)
         self.assertNotIn('branches:', workflow)
         self.assertIn('contents: read', workflow)
         self.assertEqual(workflow.count('\n      contents: write'), 1)
-        self.assertIn('^v[0-9]{8}\\.[1-9][0-9]*$', workflow)
+        self.assertIn('^v[0-9]{4}\\.(0[1-9]|1[0-2])\\.(0|[1-9][0-9]*)$', workflow)
         self.assertIn('test "$GITHUB_REF_NAME" = "v$(make --no-print-directory version)"', workflow)
         self.assertIn('make release-ready', workflow)
         self.assertIn('actions/upload-artifact@', workflow)

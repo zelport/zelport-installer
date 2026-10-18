@@ -3,7 +3,7 @@
 # The website copy is generated only from a verified installer release asset.
 # Install Zelport without changing its configuration or installing desktop plugins.
 
-ZELPORT_INSTALLER_VERSION=20261018.8
+ZELPORT_INSTALLER_VERSION=2026.10.0
 
 say() { printf '%s\n' "$*"; }
 

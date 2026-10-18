@@ -307,7 +307,7 @@ main "$@"
         )
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(direct.stdout, piped.stdout)
-        self.assertTrue(direct.stdout.startswith("Zelport Uninstaller 20261018.8\n"))
+        self.assertTrue(direct.stdout.startswith("Zelport Uninstaller 2026.10.0\n"))
         self.assertNotIn(":::::::", direct.stdout)
         self.assertIn("--purge", direct.stdout)
 

@@ -12,10 +12,10 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 INSTALLER_VERSION_RE = re.compile(
-    r"^ZELPORT_INSTALLER_VERSION=([0-9]{8}\.[1-9][0-9]*)$", re.MULTILINE
+    r"^ZELPORT_INSTALLER_VERSION=([0-9]{4}\.(?:0[1-9]|1[0-2])\.(?:0|[1-9][0-9]*))$", re.MULTILINE
 )
 UNINSTALLER_VERSION_RE = re.compile(
-    r"^ZELPORT_UNINSTALLER_VERSION=([0-9]{8}\.[1-9][0-9]*)$", re.MULTILINE
+    r"^ZELPORT_UNINSTALLER_VERSION=([0-9]{4}\.(?:0[1-9]|1[0-2])\.(?:0|[1-9][0-9]*))$", re.MULTILINE
 )
 ASSET_NAMES = {"install.sh", "uninstall.sh", "SHA256SUMS"}
 

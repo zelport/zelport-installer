@@ -23,7 +23,7 @@ that the latest stable Zelport App release publishes `PKGBUILD`, its source
 archive, and checksums for both the package recipe and platform archives. Publish
 the compatible App release before the installer release.
 
-The release workflow accepts only a matching `vYYYYMMDD.N` tag, runs the same
+The release workflow accepts only a matching `vYYYY.MM.MICRO` tag, runs the same
 preflight, builds `dist/install.sh`, `dist/uninstall.sh`, and `dist/SHA256SUMS`
 once, and passes those verified bytes to the publication job. After publication,
 `make verify-published-release` independently checks the public release. Website
