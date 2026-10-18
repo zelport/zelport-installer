@@ -24,7 +24,7 @@ EXPECTED_BANNER = """
   ::::::::::                                                  ::::
   :::::::                                                     ::::
 
-Zelport Installer 20261018.2
+Zelport Installer 20261018.3
 """
 
 
@@ -203,6 +203,8 @@ main "$@"
         self.assertEqual(section_positions, sorted(section_positions))
         self.assertTrue(result.stdout.endswith('\n\n'))
         self.assertIn('Service manager: systemd user manager available', result.stdout)
+        self.assertIn('Installing Zelport 0.10.0 from the amd64 release archive.', result.stdout)
+        self.assertNotIn('verified amd64 release archive', result.stdout)
         binary = self.home / '.local/bin/zelport'
         self.assertEqual(binary.read_bytes(), self.payload)
         self.assertTrue(os.access(binary, os.X_OK))
@@ -258,7 +260,7 @@ main "$@"
         self.log.unlink()
         result = self.run_installer(args=['--reinstall', '--no-start'])
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn('Reinstalling Zelport 0.10.0 from the verified amd64 release archive.', result.stdout)
+        self.assertIn('Reinstalling Zelport 0.10.0 from the amd64 release archive.', result.stdout)
         self.assertIn('fetch ', self.ops())
         self.assertIn(
             f'Zelport 0.10.0 was installed successfully at {self.home}/.local/bin/zelport',
@@ -504,7 +506,7 @@ exit 23
         piped = subprocess.run(['bash', '-s', '--', '--help'], input=(ROOT / 'install.sh').read_text(), text=True, capture_output=True)
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(piped.returncode, 0, piped.stderr)
-        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.2\n\nUsage:\n'))
+        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.3\n\nUsage:\n'))
         self.assertNotIn(':::::::', piped.stdout)
         self.assertIn('Options:', piped.stdout)
         self.assertIn('Supported systems:', piped.stdout)
@@ -517,7 +519,7 @@ exit 23
             if line.startswith('ZELPORT_') and '=' in line:
                 key, value = line.split('=', 1)
                 constants[key] = value
-        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.2')
+        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.3')
         self.assertEqual(constants['ZELPORT_RELEASE'], '0.10.0')
         self.assertEqual(constants['ZELPORT_ARCH_REF'], '4f57dc7487503ce5b1b3eb407b6bc2032f810aac')
         self.assertEqual(constants['ZELPORT_ARCH_SHA256'], 'b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde')

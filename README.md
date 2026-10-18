@@ -42,6 +42,47 @@ bash install.sh --reinstall
 Downloaded application archives and Arch package recipes are checked before
 installation.
 
+## Example output
+
+A binary installation in a Linux container without systemd looks like this:
+
+```text
+  :::::::
+  ::::::::::
+  :::::::::::::                                           ::::
+  ::::::::::::::::                                        ::::                                ::::
+  ::::::::::::::::::                 :::::::::: ::::::::  :::::::::::::::   :::::::: :::::::::::::::
+  ::::::::::::::::::::::             :::::::::::::::::::: ::::::::::::::::::::::::::::::::::::::::::
+  ::::::::::::::::::::::                ::::: :::::::::::::::::::::   ::::::::   :::::::::    ::::
+  ::::::::::::::::::                   :::::  ::::::::::::::::::::    ::::::::   :::::::::    ::::
+  ::::::::::::::::                   :::::::::::::::::::::::::::::::::::::::::::::::::::::    ::::::
+  :::::::::::::                      :::::::::: ::::::::: :::::::::::::::  ::::::::: :::::    ::::::
+  ::::::::::                                                  ::::
+  :::::::                                                     ::::
+
+Zelport Installer <installer-version>
+
+Preflight checks:
+  Host: Linux (ubuntu)
+  Architecture: arm64
+  Init system: none detected (container)
+  Installation method: binary
+  Privileges: regular user
+  Service manager: systemd user manager unavailable (systemctl not found)
+
+Progress:
+  Installing Zelport <app-version> from the arm64 release archive.
+
+Result:
+  Zelport <app-version> was installed successfully at /home/user/.local/bin/zelport
+  No reachable systemd user manager. Automatic startup was not configured.
+
+Tips:
+  Configuration file: /home/user/.config/zelport/config.json
+  Default URL: http://localhost:8080
+  Start Zelport manually: /home/user/.local/bin/zelport
+```
+
 ## Versioning
 
 `ZELPORT_INSTALLER_VERSION` uses `YYYYMMDD.N`, where `N` starts at 1 and
