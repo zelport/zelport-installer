@@ -6,15 +6,13 @@ installation guidance and tips.
 
 ## Install
 
-Run the installer as your regular user:
+Do not run the installer as root or with `sudo`. On Arch Linux and Omarchy,
+`makepkg` may request your password when pacman installs packages or
+dependencies. Run the installer as your regular user:
 
 ```sh
 curl -fsSL https://zelport.com/install.sh | bash
 ```
-
-Do not run the installer as root or with `sudo`. On Arch Linux and Omarchy,
-`makepkg` may request your password when pacman installs packages or
-dependencies.
 
 ## Supported systems
 
@@ -27,9 +25,6 @@ dependencies.
 | Windows | Reports that the Bash installer is unsupported and makes no changes. |
 
 Binary installation supports `amd64` and `arm64`.
-
-Before installation, the script reports the detected host, architecture, init
-system, installation method, privileges, and service manager.
 
 Use `--help` to list the available options, `--no-start` to install without
 managing the user service, and `--reinstall` to reinstall an already current
