@@ -1,14 +1,14 @@
 # Zelport Installer
 
 `install.sh` is the standalone installer for Zelport App. Installer releases use
-date-based versions independently from the App: this source is `20261017.1` and
+date-based versions independently from the App: this source is `20261018.2` and
 installs Zelport App `0.10.0`.
 
 Download the exact release asset, inspect it, and run it as your regular user:
 
 ```sh
-curl -fsSLO https://github.com/zelport/zelport-installer/releases/download/v20261017.1/install.sh
-curl -fsSLO https://github.com/zelport/zelport-installer/releases/download/v20261017.1/SHA256SUMS
+curl -fsSLO https://github.com/zelport/zelport-installer/releases/download/v20261018.2/install.sh
+curl -fsSLO https://github.com/zelport/zelport-installer/releases/download/v20261018.2/SHA256SUMS
 sha256sum --check SHA256SUMS
 less install.sh
 bash install.sh
@@ -32,6 +32,8 @@ Unsupported operating systems and CPU architectures fail before a download.
 Linux installation requires Bash, curl, tar, ordinary POSIX tools, and either
 `sha256sum` or `shasum`. Arch installation additionally requires pacman,
 makepkg, and the package build dependencies declared by the reviewed recipe.
+Before installing, the script reports the detected operating system,
+architecture, installation method, and systemd user-manager availability.
 
 Use `--no-start` to install without creating, enabling, starting, stopping, or
 restarting a user service:
@@ -39,6 +41,10 @@ restarting a user service:
 ```sh
 bash install.sh --no-start
 ```
+
+When the selected Zelport version is already installed, the installer exits
+without changing the installation or service. Use `--reinstall` to download,
+verify, and install that version again. It can be combined with `--no-start`.
 
 ## Integrity and ownership boundaries
 

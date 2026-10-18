@@ -9,7 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / 'scripts/verify-release-sync.py'
-VERSION = '20261017.1'
+VERSION = '20261018.2'
 
 
 class ReleaseSyncTests(unittest.TestCase):
@@ -19,7 +19,7 @@ class ReleaseSyncTests(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.release = self.root / 'release'
         self.release.mkdir()
-        self.script = b'#!/usr/bin/env bash\nZELPORT_INSTALLER_VERSION=20261017.1\nprintf ok\\n\n'
+        self.script = b'#!/usr/bin/env bash\nZELPORT_INSTALLER_VERSION=20261018.2\nprintf ok\\n\n'
         (self.release / 'install.sh').write_bytes(self.script)
         digest = hashlib.sha256(self.script).hexdigest()
         (self.release / 'SHA256SUMS').write_text(f'{digest}  install.sh\n')
@@ -49,7 +49,7 @@ class ReleaseSyncTests(unittest.TestCase):
         self.assertEqual(output['release_sha256'], expected)
         self.assertEqual(output['website_sha256'], hashlib.sha256(b'old installer\n').hexdigest())
         self.assertEqual(output['result_sha256'], expected)
-        self.assertEqual(output['commit_message'], 'chore(installer): sync v20261017.1')
+        self.assertEqual(output['commit_message'], 'chore(installer): sync v20261018.2')
 
     def test_identical_website_bytes_are_idempotent(self):
         self.website.write_bytes(self.script)
@@ -99,8 +99,8 @@ class ReleaseSyncTests(unittest.TestCase):
         self.assertEqual(self.website.read_bytes(), b'old installer\n')
 
     def test_release_version_must_match_argument_and_script_once(self):
-        self.assertNotEqual(self.run_helper('20261017.2').returncode, 0)
-        (self.release / 'install.sh').write_bytes(self.script + b'ZELPORT_INSTALLER_VERSION=20261017.1\n')
+        self.assertNotEqual(self.run_helper('20261018.3').returncode, 0)
+        (self.release / 'install.sh').write_bytes(self.script + b'ZELPORT_INSTALLER_VERSION=20261018.2\n')
         digest = hashlib.sha256((self.release / 'install.sh').read_bytes()).hexdigest()
         (self.release / 'SHA256SUMS').write_text(f'{digest}  install.sh\n')
         self.assertNotEqual(self.run_helper().returncode, 0)

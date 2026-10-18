@@ -10,6 +10,22 @@ import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+EXPECTED_BANNER = """
+  :::::::
+  ::::::::::
+  :::::::::::::                                           ::::
+  ::::::::::::::::                                        ::::                                ::::
+  ::::::::::::::::::                 :::::::::: ::::::::  :::::::::::::::   :::::::: :::::::::::::::
+  ::::::::::::::::::::::             :::::::::::::::::::: ::::::::::::::::::::::::::::::::::::::::::
+  ::::::::::::::::::::::                ::::: :::::::::::::::::::::   ::::::::   :::::::::    ::::
+  ::::::::::::::::::                   :::::  ::::::::::::::::::::    ::::::::   :::::::::    ::::
+  ::::::::::::::::                   :::::::::::::::::::::::::::::::::::::::::::::::::::::    ::::::
+  :::::::::::::                      :::::::::: ::::::::: :::::::::::::::  ::::::::: :::::    ::::::
+  ::::::::::                                                  ::::
+  :::::::                                                     ::::
+
+Zelport Installer 20261018.2
+"""
 
 
 class InstallTests(unittest.TestCase):
@@ -43,7 +59,8 @@ class InstallTests(unittest.TestCase):
 
     def run_installer(self, args=(), os_name='Linux', distro='debian', arch='x86_64',
                       session=True, active=False, collision=False, uid=1000, start_ok=True,
-                      other_install=False, readonly_cache=False, package_version="", enabled=False, package_complete=True):
+                      other_install=False, readonly_cache=False, package_version="", enabled=False,
+                      package_complete=True, omarchy=False, init_system='systemd', sudo_user=None):
         self.log = self.home / 'operations'
         program = r'''
 source "$INSTALLER"
@@ -51,6 +68,7 @@ ZELPORT_ARCH_SHA256="$TEST_ARCH_SHA256"
 uname() { if [[ ${1:-} == -m ]]; then printf '%s\n' "$TEST_ARCH"; else printf '%s\n' "$TEST_OS"; fi; }
 id() { printf '%s\n' "$TEST_UID"; }
 detect_distro() { printf '%s\n' "$TEST_DISTRO"; }
+detect_init_system() { printf '%s\n' "$TEST_INIT_SYSTEM"; }
 fetch() { printf 'fetch %s\n' "$1" >> "$TEST_LOG"; cp "$TEST_ASSETS/${1##*/}" "$2"; }
 systemctl() {
     printf 'systemctl %s\n' "$*" >> "$TEST_LOG"
@@ -88,7 +106,7 @@ main "$@"
                'PATH': str(self.home / '.local/bin') + ':/usr/bin:/bin:/usr/sbin:/sbin',
                'INSTALLER': str(ROOT / 'install.sh'), 'TEST_ASSETS': str(self.assets),
                'TEST_LOG': str(self.log), 'TEST_ARCH': arch, 'TEST_OS': os_name,
-               'TEST_DISTRO': distro, 'TEST_UID': str(uid),
+               'TEST_DISTRO': distro, 'TEST_INIT_SYSTEM': init_system, 'TEST_UID': str(uid),
                'TEST_SESSION': 'yes' if session else 'no', 'TEST_ACTIVE': 'yes' if active else 'no',
                'TEST_COLLISION': 'yes' if collision else 'no', 'TEST_START_OK': 'yes' if start_ok else 'no',
                'TEST_READONLY_CACHE': 'yes' if readonly_cache else 'no',
@@ -96,6 +114,14 @@ main "$@"
                'TEST_PACKAGE_VERSION': package_version,
                'TEST_ENABLED': 'yes' if enabled else 'no',
                'TEST_PACKAGE_COMPLETE': 'yes' if package_complete else 'no'}
+        env.pop('SUDO_USER', None)
+        if sudo_user is not None:
+            env['SUDO_USER'] = sudo_user
+        if omarchy:
+            omarchy_version = self.home / '.local/bin/omarchy-version'
+            omarchy_version.parent.mkdir(parents=True, exist_ok=True)
+            omarchy_version.write_text('#!/bin/sh\necho 4.0.4\n')
+            omarchy_version.chmod(0o755)
         if other_install:
             other = self.home / 'other/bin'
             other.mkdir(parents=True)
@@ -119,6 +145,48 @@ main "$@"
                 self.assertIn(message, result.stdout)
                 self.assertEqual(self.ops(), '')
 
+    def test_macos_uses_logical_sections_without_progress(self):
+        result = self.run_installer(os_name='Darwin', arch='arm64')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        section_positions = [
+            result.stdout.index(f'{heading}:')
+            for heading in ('Preflight checks', 'Result', 'Tips')
+        ]
+        self.assertEqual(section_positions, sorted(section_positions))
+        self.assertNotIn('Progress:', result.stdout)
+        self.assertIn('Host: Darwin (macOS)', result.stdout)
+        self.assertIn('Architecture: arm64', result.stdout)
+        self.assertIn('Init system: launchd', result.stdout)
+        self.assertIn('Installation method: Homebrew', result.stdout)
+        self.assertIn('Privileges: regular user', result.stdout)
+        self.assertIn('Service manager: launchd', result.stdout)
+        self.assertNotIn('Status:', result.stdout)
+        self.assertIn('No changes were made.', result.stdout)
+        self.assertTrue(result.stdout.endswith('\n\n'))
+
+    def test_macos_reports_sudo_in_preflight_and_refuses_installation(self):
+        result = self.run_installer(os_name='Darwin', arch='arm64', uid=0, sudo_user='zdenek')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Preflight checks:', result.stdout)
+        self.assertIn('Privileges: root (sudo)', result.stdout)
+        self.assertIn('Result:', result.stdout)
+        self.assertIn('root privileges were detected', result.stdout)
+        self.assertIn('Tips:', result.stdout)
+        self.assertIn('Run this installer as your regular user, without sudo.', result.stdout)
+        self.assertNotIn('brew install', result.stdout)
+
+    def test_linux_root_is_reported_without_system_or_download_operations(self):
+        result = self.run_installer(uid=0)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('Privileges: root', result.stdout)
+        self.assertIn(
+            'Service manager: systemd user manager not checked (root privileges)',
+            result.stdout,
+        )
+        self.assertIn('root privileges were detected', result.stdout)
+        self.assertIn('Run this installer as your regular user, without sudo.', result.stdout)
+        self.assertEqual(self.ops(), '')
+
     def test_root_and_unsupported_arch_fail_before_download(self):
         for kw in [{'uid': 0}, {'arch': 'riscv64'}]:
             result = self.run_installer(**kw)
@@ -128,11 +196,24 @@ main "$@"
     def test_binary_install_and_user_service(self):
         result = self.run_installer()
         self.assertEqual(result.returncode, 0, result.stderr)
+        section_positions = [
+            result.stdout.index(f'{heading}:')
+            for heading in ('Preflight checks', 'Progress', 'Result', 'Tips')
+        ]
+        self.assertEqual(section_positions, sorted(section_positions))
+        self.assertTrue(result.stdout.endswith('\n\n'))
+        self.assertIn('Service manager: systemd user manager available', result.stdout)
         binary = self.home / '.local/bin/zelport'
         self.assertEqual(binary.read_bytes(), self.payload)
         self.assertTrue(os.access(binary, os.X_OK))
         self.assertEqual((self.home / '.local/share/zelport/THIRD_PARTY_NOTICES.txt').read_text(), 'license')
+        self.assertIn(
+            f'Configuration file: {self.home}/.config/zelport/config.json',
+            result.stdout,
+        )
+        self.assertIn('Default URL: http://localhost:8080', result.stdout)
         unit = self.home / '.config/systemd/user/zelport.service'
+        self.assertIn('Description=Zelport App', unit.read_text())
         self.assertIn('ExecStart=%h/.local/bin/zelport', unit.read_text())
         self.assertIn('systemctl --user start zelport.service', self.ops())
         self.assertIn('systemctl --user enable zelport.service', self.ops())
@@ -143,12 +224,69 @@ main "$@"
         self.assertTrue((self.home / '.local/bin/zelport').exists())
         self.assertFalse((self.home / '.config/systemd/user').exists())
         self.assertNotIn('start zelport', self.ops())
-        self.assertIn('manually', result.stdout)
+        self.assertIn(
+            f'Zelport 0.10.0 was installed successfully at {self.home}/.local/bin/zelport',
+            result.stdout,
+        )
+        self.assertIn('Start Zelport manually:', result.stdout)
+        self.assertNotIn('\x1b', result.stdout)
+        self.assertIn(
+            'Service manager: systemd user manager unavailable (user manager not reachable)',
+            result.stdout,
+        )
+        self.assertLess(
+            result.stdout.index('No reachable systemd user manager.'),
+            result.stdout.index('Start Zelport manually:'),
+        )
+
+    def test_current_binary_without_systemd_does_not_claim_reinstallation(self):
+        self.assertEqual(self.run_installer(session=False).returncode, 0)
+        result = self.run_installer(session=False)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Zelport 0.10.0 is already installed.', result.stdout)
+        self.assertIn('If you want to reinstall Zelport, run this installer with --reinstall.', result.stdout)
+        self.assertNotIn('Progress:', result.stdout)
+        self.assertLess(result.stdout.index('Preflight checks:'), result.stdout.index('Result:'))
+        self.assertLess(result.stdout.index('Result:'), result.stdout.index('Tips:'))
+        self.assertTrue(result.stdout.endswith('\n\n'))
+        self.assertNotIn('\x1b', result.stdout)
+        self.assertNotIn('Start Zelport manually:', result.stdout)
+        self.assertNotIn('was installed', result.stdout)
+
+    def test_reinstall_replaces_current_binary(self):
+        self.assertEqual(self.run_installer(args=['--no-start']).returncode, 0)
+        self.log.unlink()
+        result = self.run_installer(args=['--reinstall', '--no-start'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Reinstalling Zelport 0.10.0 from the verified amd64 release archive.', result.stdout)
+        self.assertIn('fetch ', self.ops())
+        self.assertIn(
+            f'Zelport 0.10.0 was installed successfully at {self.home}/.local/bin/zelport',
+            result.stdout,
+        )
 
     def test_no_start_does_not_touch_systemd(self):
         result = self.run_installer(args=['--no-start'])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn('systemctl', self.ops())
+        self.assertIn('Service manager: systemd user manager not checked (--no-start)', result.stdout)
+
+    def test_preflight_reports_detected_environment(self):
+        result = self.run_installer(args=['--no-start'])
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Preflight checks:', result.stdout)
+        self.assertIn('Host: Linux (debian)', result.stdout)
+        self.assertIn('Architecture: amd64', result.stdout)
+        self.assertIn('Init system: systemd', result.stdout)
+        self.assertIn('Installation method: binary', result.stdout)
+        self.assertIn('Privileges: regular user', result.stdout)
+        self.assertNotIn('Status:', result.stdout)
+        self.assertNotIn('The Omarchy plugin is separate:', result.stdout)
+
+    def test_omarchy_plugin_hint_is_only_printed_on_omarchy(self):
+        result = self.run_installer(distro='arch', args=['--no-start'], omarchy=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('The Omarchy plugin is separate:', result.stdout)
 
     def test_checksum_failure_preserves_existing_binary(self):
         binary = self.home / '.local/bin/zelport'
@@ -202,6 +340,11 @@ main "$@"
         result = self.run_installer(distro='arch', args=['--no-start'])
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn('makepkg --syncdeps --install', self.ops())
+        self.assertIn(
+            f'Configuration file: {self.home}/.config/zelport/config.json',
+            result.stdout,
+        )
+        self.assertIn('Default URL: http://localhost:8080', result.stdout)
         self.assertFalse((self.home / '.local/bin/zelport').exists())
 
     def test_modified_arch_recipe_is_never_executed(self):
@@ -283,22 +426,33 @@ exit 23
         self.assertNotIn('fetch ', self.ops())
         self.assertNotIn('restart ', self.ops())
         self.assertNotIn('daemon-reload', self.ops())
+        self.assertIn('If you want to reinstall Zelport, run this installer with --reinstall.', result.stdout)
         self.assertEqual(before, (binary.stat().st_mtime_ns, unit.stat().st_mtime_ns))
 
-    def test_current_binary_can_start_missing_service(self):
+    def test_current_binary_exits_without_creating_missing_service(self):
         self.assertEqual(self.run_installer(args=['--no-start']).returncode, 0)
         self.log.unlink()
         result = self.run_installer()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn('fetch ', self.ops())
-        self.assertIn('systemctl --user start zelport.service', self.ops())
-        self.assertTrue((self.home / '.config/systemd/user/zelport.service').exists())
+        self.assertNotIn('systemctl --user start zelport.service', self.ops())
+        self.assertFalse((self.home / '.config/systemd/user/zelport.service').exists())
+        self.assertIn('If you want to reinstall Zelport, run this installer with --reinstall.', result.stdout)
 
     def test_current_arch_package_skips_build_and_restart(self):
         result = self.run_installer(distro='arch', package_version='0.10.0-1', active=True)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertNotIn('makepkg ', self.ops())
         self.assertNotIn('restart ', self.ops())
+        self.assertIn('If you want to reinstall Zelport, run this installer with --reinstall.', result.stdout)
+
+    def test_reinstall_rebuilds_current_arch_package(self):
+        result = self.run_installer(
+            distro='arch', package_version='0.10.0-1', args=['--reinstall', '--no-start']
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn('Reinstalling Zelport 0.10.0-1 from the verified Arch package recipe.', result.stdout)
+        self.assertIn('makepkg --syncdeps --install', self.ops())
 
     def test_incomplete_arch_package_is_reinstalled(self):
         result = self.run_installer(distro='arch', package_version='0.10.0-1',
@@ -336,23 +490,25 @@ exit 23
         self.assertNotIn('fetch', self.ops())
         self.assertFalse((self.home / '.local/bin/zelport').exists())
 
-    def test_installer_version_is_printed_before_every_execution_path(self):
+    def test_ascii_logo_and_product_name_start_installation_paths(self):
         for options in [
-            {'args': ['--help']}, {'args': ['--unknown']},
             {'os_name': 'Darwin'}, {'os_name': 'MINGW64_NT'},
             {'args': ['--no-start']}, {'uid': 0},
         ]:
             with self.subTest(options=options):
                 result = self.run_installer(**options)
-                self.assertEqual(result.stdout.splitlines()[0], 'Zelport installer 20261017.1')
+                self.assertTrue(result.stdout.startswith(EXPECTED_BANNER), result.stdout)
 
     def test_direct_and_pipe_help(self):
         direct = subprocess.run(['bash', str(ROOT / 'install.sh'), '--help'], text=True, capture_output=True)
         piped = subprocess.run(['bash', '-s', '--', '--help'], input=(ROOT / 'install.sh').read_text(), text=True, capture_output=True)
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(piped.returncode, 0, piped.stderr)
-        self.assertIn('Usage:', piped.stdout)
-        self.assertEqual(piped.stdout.splitlines()[0], 'Zelport installer 20261017.1')
+        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.2\n\nUsage:\n'))
+        self.assertNotIn(':::::::', piped.stdout)
+        self.assertIn('Options:', piped.stdout)
+        self.assertIn('Supported systems:', piped.stdout)
+        self.assertIn('--reinstall', piped.stdout)
         self.assertEqual(direct.stdout, piped.stdout)
 
     def test_versions_and_reviewed_arch_pin_are_exact(self):
@@ -361,7 +517,7 @@ exit 23
             if line.startswith('ZELPORT_') and '=' in line:
                 key, value = line.split('=', 1)
                 constants[key] = value
-        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261017.1')
+        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.2')
         self.assertEqual(constants['ZELPORT_RELEASE'], '0.10.0')
         self.assertEqual(constants['ZELPORT_ARCH_REF'], '4f57dc7487503ce5b1b3eb407b6bc2032f810aac')
         self.assertEqual(constants['ZELPORT_ARCH_SHA256'], 'b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde')
