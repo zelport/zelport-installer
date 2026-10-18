@@ -28,10 +28,12 @@ request your password when pacman installs packages or dependencies.
 Before installation, the script reports the detected host, architecture, init
 system, installation method, privileges, and service manager.
 
-Use `--no-start` to install without managing the user service. Use `--reinstall`
-to reinstall an already current installation:
+Use `--help` to list the available options, `--no-start` to install without
+managing the user service, and `--reinstall` to reinstall an already current
+installation:
 
 ```sh
+bash install.sh --help
 bash install.sh --no-start
 bash install.sh --reinstall
 ```
