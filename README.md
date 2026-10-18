@@ -21,10 +21,12 @@ dependencies.
 | System | Behavior |
 | --- | --- |
 | macOS | Shows Homebrew installation and service commands without making changes. |
+| Linux with systemd | Installs the Zelport binary and manages the user service |
+| Linux without systemd | Installs the Zelport binary and shows how to start it manually |
 | Arch Linux / Omarchy | Builds and installs the Zelport package with `makepkg` |
-| Other Linux on `amd64`/`arm64` | Installs the Zelport binary at `~/.local/bin/zelport` |
-| Linux without systemd | Installs the binary and shows how to start it manually. |
 | Windows | Reports that the Bash installer is unsupported and makes no changes. |
+
+Binary installation supports `amd64` and `arm64`.
 
 Before installation, the script reports the detected host, architecture, init
 system, installation method, privileges, and service manager.
