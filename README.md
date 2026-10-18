@@ -21,8 +21,8 @@ dependencies.
 | System | Behavior |
 | --- | --- |
 | macOS | Shows Homebrew installation and service commands without making changes. |
-| Arch Linux / Omarchy | Builds and installs the checked pacman package through `makepkg`. |
-| Other Linux on x86-64 or ARM64 | Installs the checked binary in `~/.local/bin/zelport`. |
+| Arch Linux / Omarchy | Builds and installs the Zelport package with `makepkg` |
+| Other Linux on `amd64`/`arm64` | Installs the Zelport binary at `~/.local/bin/zelport` |
 | Linux without systemd | Installs the binary and shows how to start it manually. |
 | Windows | Reports that the Bash installer is unsupported and makes no changes. |
 
