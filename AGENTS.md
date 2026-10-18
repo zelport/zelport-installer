@@ -19,9 +19,10 @@ Zelport service owned by the selected installation method. Never stop unrelated
 processes. Keep tests isolated with temporary homes and mocked system
 operations.
 
-Before a commit, run `make check` and `make release-assets`. `make check` covers
-shell syntax, the complete Python suite, and the deterministic two-build
-comparison of release assets.
+Before a release commit, run `make release-ready`; it checks shell syntax, the
+complete Python suite, the latest public App release contract, deterministic
+release assets, and their exact contents. Use `make check` for changes that do
+not affect release preparation.
 
 Use Conventional Commits. Preserve the existing repository-local Git author and
 committer configuration unless the user explicitly requests a change. Do not

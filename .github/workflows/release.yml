@@ -25,15 +25,16 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$GITHUB_REF_NAME" =~ ^v[0-9]{8}\.[1-9][0-9]*$ ]]
-          installer_version=$(sed -n 's/^ZELPORT_INSTALLER_VERSION=//p' install.sh)
-          uninstaller_version=$(sed -n 's/^ZELPORT_UNINSTALLER_VERSION=//p' uninstall.sh)
-          test "$installer_version" = "$uninstaller_version"
-          test "$GITHUB_REF_NAME" = "v${installer_version}"
+          test "$GITHUB_REF_NAME" = "v$(make --no-print-directory version)"
       - name: Verify and build release assets
-        run: |
-          make check
-          make release-assets
-          (cd dist && sha256sum --check SHA256SUMS)
+        run: make release-ready
+      - name: Store verified release assets
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: zelport-installer-release-${{ github.run_id }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 1
 
   release:
     needs: verify
@@ -47,17 +48,17 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Rebuild and publish exact assets
+      - name: Download verified release assets
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: zelport-installer-release-${{ github.run_id }}
+          path: dist
+      - name: Publish exact verified assets
         shell: bash
         run: |
           set -euo pipefail
-          installer_version=$(sed -n 's/^ZELPORT_INSTALLER_VERSION=//p' install.sh)
-          uninstaller_version=$(sed -n 's/^ZELPORT_UNINSTALLER_VERSION=//p' uninstall.sh)
-          test "$installer_version" = "$uninstaller_version"
-          test "$GITHUB_REF_NAME" = "v${installer_version}"
-          make check
-          make release-assets
-          (cd dist && sha256sum --check SHA256SUMS)
+          test "$GITHUB_REF_NAME" = "v$(make --no-print-directory version)"
+          make verify-release-assets
           gh release create "$GITHUB_REF_NAME" \
             dist/install.sh dist/uninstall.sh dist/SHA256SUMS \
             --verify-tag \
@@ -69,4 +70,7 @@ jobs:
           mkdir released
           gh release download "$GITHUB_REF_NAME" \
             --dir released
-          (cd released && sha256sum --check SHA256SUMS)
+          make verify-release-assets DIST_DIR=released
+          cmp dist/install.sh released/install.sh
+          cmp dist/uninstall.sh released/uninstall.sh
+          cmp dist/SHA256SUMS released/SHA256SUMS

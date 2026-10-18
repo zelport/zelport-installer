@@ -7,11 +7,11 @@ from an untagged branch. Versioning rules are documented in
 
 ## Checks
 
-Run the complete check and build deterministic release assets:
+Run the complete preflight, verify the latest public Zelport App release, and
+build and verify deterministic release assets:
 
 ```sh
-make check
-make release-assets
+make release-ready
 ```
 
 The test suite uses temporary homes and mocked system operations. It does not
@@ -23,7 +23,8 @@ that the latest stable Zelport App release publishes `PKGBUILD`, its source
 archive, and checksums for both the package recipe and platform archives. Publish
 the compatible App release before the installer release.
 
-The release workflow accepts only a matching `vYYYYMMDD.N` tag, reruns the
-checks, builds `dist/install.sh`, `dist/uninstall.sh`, and `dist/SHA256SUMS`, and
-publishes those exact files. Website synchronization is a separate verified
-release step.
+The release workflow accepts only a matching `vYYYYMMDD.N` tag, runs the same
+preflight, builds `dist/install.sh`, `dist/uninstall.sh`, and `dist/SHA256SUMS`
+once, and passes those verified bytes to the publication job. After publication,
+`make verify-published-release` independently checks the public release. Website
+synchronization is a separate verified release step.

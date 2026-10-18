@@ -585,6 +585,28 @@ exit 23
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(protected.read_text(), 'preserve')
 
+    def test_release_builder_replaces_only_owned_output_directory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / 'dist'
+            output.mkdir()
+            (output / 'install.sh').write_text('old')
+            result = subprocess.run(
+                ['python3', str(ROOT / 'scripts/build_release.py'), '--output', str(output)],
+                text=True, capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                {path.name for path in output.iterdir()},
+                {'install.sh', 'uninstall.sh', 'SHA256SUMS'},
+            )
+            (output / 'unexpected').write_text('preserve')
+            result = subprocess.run(
+                ['python3', str(ROOT / 'scripts/build_release.py'), '--output', str(output)],
+                text=True, capture_output=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual((output / 'unexpected').read_text(), 'preserve')
+
     def test_release_workflow_is_tag_only_and_minimally_privileged(self):
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
         self.assertIn("'v[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].[0-9]+'", workflow)
@@ -593,11 +615,10 @@ exit 23
         self.assertIn('contents: read', workflow)
         self.assertEqual(workflow.count('\n      contents: write'), 1)
         self.assertIn('^v[0-9]{8}\\.[1-9][0-9]*$', workflow)
-        self.assertIn('test "$installer_version" = "$uninstaller_version"', workflow)
-        self.assertIn('test "$GITHUB_REF_NAME" = "v${installer_version}"', workflow)
-        self.assertIn('make check', workflow)
-        self.assertIn('make release-assets', workflow)
-        self.assertIn('(cd dist && sha256sum --check SHA256SUMS)', workflow)
+        self.assertIn('test "$GITHUB_REF_NAME" = "v$(make --no-print-directory version)"', workflow)
+        self.assertIn('make release-ready', workflow)
+        self.assertIn('actions/upload-artifact@', workflow)
+        self.assertIn('actions/download-artifact@', workflow)
         self.assertIn('dist/install.sh dist/uninstall.sh dist/SHA256SUMS', workflow)
 
 

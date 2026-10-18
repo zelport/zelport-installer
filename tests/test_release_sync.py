@@ -134,8 +134,11 @@ class ReleaseSyncTests(unittest.TestCase):
     def test_release_workflow_downloads_and_verifies_published_assets(self):
         workflow = (ROOT / '.github/workflows/release.yml').read_text()
         download = workflow.index('gh release download "$GITHUB_REF_NAME"')
-        verify = workflow.index('(cd released && sha256sum --check SHA256SUMS)')
+        verify = workflow.index('make verify-release-assets DIST_DIR=released')
         self.assertLess(download, verify)
+        self.assertIn('cmp dist/install.sh released/install.sh', workflow)
+        self.assertIn('cmp dist/uninstall.sh released/uninstall.sh', workflow)
+        self.assertIn('cmp dist/SHA256SUMS released/SHA256SUMS', workflow)
         self.assertNotIn('INSTALLER_SYNC_PRIVATE_KEY', workflow)
         self.assertNotIn('repository: zelport/zelport-web', workflow)
         self.assertNotIn('--pattern', workflow)
