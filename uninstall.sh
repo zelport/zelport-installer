@@ -3,7 +3,7 @@
 # Remove only Zelport files owned by the detected installation method.
 # Preserve user configuration and state unless --purge is explicitly requested.
 
-ZELPORT_UNINSTALLER_VERSION=20261018.5
+ZELPORT_UNINSTALLER_VERSION=20261018.6
 
 say() { printf '%s\n' "$*"; }
 

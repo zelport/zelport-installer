@@ -4,7 +4,7 @@
 # Install Zelport without changing its configuration or installing desktop plugins.
 # Keep the release and reviewed Arch recipe pins together when publishing updates.
 
-ZELPORT_INSTALLER_VERSION=20261018.5
+ZELPORT_INSTALLER_VERSION=20261018.6
 ZELPORT_RELEASE=0.10.0
 ZELPORT_ARCH_REF=4f57dc7487503ce5b1b3eb407b6bc2032f810aac
 ZELPORT_ARCH_SHA256=b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde
@@ -31,6 +31,49 @@ warning_message() { color_message 1 33 "$*"; }
 warning_stderr() { color_message 2 33 "Warning: $*"; }
 die() { color_message 2 31 "Error: $*"; exit 1; }
 require() { command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"; }
+
+# Source: zelport-identity-kit/assets/ascii/zelport-logo.txt
+banner() {
+    cat <<'EOF'
+
+  :::::::
+  ::::::::::
+  :::::::::::::                                           ::::
+  ::::::::::::::::                                        ::::                                ::::
+  ::::::::::::::::::                 :::::::::: ::::::::  :::::::::::::::   :::::::: :::::::::::::::
+  ::::::::::::::::::::::             :::::::::::::::::::: ::::::::::::::::::::::::::::::::::::::::::
+  ::::::::::::::::::::::                ::::: :::::::::::::::::::::   ::::::::   :::::::::    ::::
+  ::::::::::::::::::                   :::::  ::::::::::::::::::::    ::::::::   :::::::::    ::::
+  ::::::::::::::::                   :::::::::::::::::::::::::::::::::::::::::::::::::::::    ::::::
+  :::::::::::::                      :::::::::: ::::::::: :::::::::::::::  ::::::::: :::::    ::::::
+  ::::::::::                                                  ::::
+  :::::::                                                     ::::
+
+EOF
+}
+
+usage() {
+    cat <<EOF
+Zelport Installer $ZELPORT_INSTALLER_VERSION
+
+Usage:
+  bash install.sh [options]
+
+Options:
+  --no-start     Install without managing the Zelport user service.
+  --reinstall    Reinstall Zelport $ZELPORT_RELEASE when it is already current.
+  -h, --help     Show this help.
+
+Supported systems:
+  Arch Linux / Omarchy  Install the verified pacman package.
+  Other Linux           Install the verified binary in ~/.local/bin/zelport.
+  macOS                 Print Homebrew commands without making changes.
+  Windows               Unsupported; make no changes.
+
+By default, the installer starts and enables Zelport through the systemd user
+manager when available. Run the installer as a regular user, without sudo.
+EOF
+}
 
 already_installed_notice() {
     local message="  Zelport $1 is already installed."
@@ -71,26 +114,6 @@ root_privileges_result() {
     say ''
 }
 
-# Source: zelport-identity-kit/assets/ascii/zelport-logo.txt
-banner() {
-    cat <<'EOF'
-
-  :::::::
-  ::::::::::
-  :::::::::::::                                           ::::
-  ::::::::::::::::                                        ::::                                ::::
-  ::::::::::::::::::                 :::::::::: ::::::::  :::::::::::::::   :::::::: :::::::::::::::
-  ::::::::::::::::::::::             :::::::::::::::::::: ::::::::::::::::::::::::::::::::::::::::::
-  ::::::::::::::::::::::                ::::: :::::::::::::::::::::   ::::::::   :::::::::    ::::
-  ::::::::::::::::::                   :::::  ::::::::::::::::::::    ::::::::   :::::::::    ::::
-  ::::::::::::::::                   :::::::::::::::::::::::::::::::::::::::::::::::::::::    ::::::
-  :::::::::::::                      :::::::::: ::::::::: :::::::::::::::  ::::::::: :::::    ::::::
-  ::::::::::                                                  ::::
-  :::::::                                                     ::::
-
-EOF
-}
-
 cleanup() {
     local result=$?
     trap - EXIT
@@ -103,29 +126,6 @@ cleanup() {
         warning_stderr "could not remove temporary binary: $install_tmp"
     fi
     exit "$result"
-}
-
-usage() {
-    cat <<EOF
-Zelport Installer $ZELPORT_INSTALLER_VERSION
-
-Usage:
-  bash install.sh [options]
-
-Options:
-  --no-start     Install without managing the Zelport user service.
-  --reinstall    Reinstall Zelport $ZELPORT_RELEASE when it is already current.
-  -h, --help     Show this help.
-
-Supported systems:
-  Arch Linux / Omarchy  Install the verified pacman package.
-  Other Linux           Install the verified binary in ~/.local/bin/zelport.
-  macOS                 Print Homebrew commands without making changes.
-  Windows               Unsupported; make no changes.
-
-By default, the installer starts and enables Zelport through the systemd user
-manager when available. Run the installer as a regular user, without sudo.
-EOF
 }
 
 fetch() {
