@@ -24,7 +24,7 @@ EXPECTED_BANNER = """
   ::::::::::                                                  ::::
   :::::::                                                     ::::
 
-Zelport Installer 20261018.4
+Zelport Installer 20261018.5
 """
 
 
@@ -506,7 +506,7 @@ exit 23
         piped = subprocess.run(['bash', '-s', '--', '--help'], input=(ROOT / 'install.sh').read_text(), text=True, capture_output=True)
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(piped.returncode, 0, piped.stderr)
-        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.4\n\nUsage:\n'))
+        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.5\n\nUsage:\n'))
         self.assertNotIn(':::::::', piped.stdout)
         self.assertIn('Options:', piped.stdout)
         self.assertIn('Supported systems:', piped.stdout)
@@ -519,7 +519,7 @@ exit 23
             if line.startswith('ZELPORT_') and '=' in line:
                 key, value = line.split('=', 1)
                 constants[key] = value
-        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.4')
+        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.5')
         self.assertEqual(constants['ZELPORT_RELEASE'], '0.10.0')
         self.assertEqual(constants['ZELPORT_ARCH_REF'], '4f57dc7487503ce5b1b3eb407b6bc2032f810aac')
         self.assertEqual(constants['ZELPORT_ARCH_SHA256'], 'b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde')

@@ -4,7 +4,7 @@
 # Install Zelport without changing its configuration or installing desktop plugins.
 # Keep the release and reviewed Arch recipe pins together when publishing updates.
 
-ZELPORT_INSTALLER_VERSION=20261018.4
+ZELPORT_INSTALLER_VERSION=20261018.5
 ZELPORT_RELEASE=0.10.0
 ZELPORT_ARCH_REF=4f57dc7487503ce5b1b3eb407b6bc2032f810aac
 ZELPORT_ARCH_SHA256=b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde
