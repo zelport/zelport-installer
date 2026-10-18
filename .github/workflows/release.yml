@@ -25,8 +25,10 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$GITHUB_REF_NAME" =~ ^v[0-9]{8}\.[1-9][0-9]*$ ]]
-          source_version=$(sed -n 's/^ZELPORT_INSTALLER_VERSION=//p' install.sh)
-          test "$GITHUB_REF_NAME" = "v${source_version}"
+          installer_version=$(sed -n 's/^ZELPORT_INSTALLER_VERSION=//p' install.sh)
+          uninstaller_version=$(sed -n 's/^ZELPORT_UNINSTALLER_VERSION=//p' uninstall.sh)
+          test "$installer_version" = "$uninstaller_version"
+          test "$GITHUB_REF_NAME" = "v${installer_version}"
       - name: Verify and build release assets
         run: |
           make check
@@ -49,13 +51,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          source_version=$(sed -n 's/^ZELPORT_INSTALLER_VERSION=//p' install.sh)
-          test "$GITHUB_REF_NAME" = "v${source_version}"
+          installer_version=$(sed -n 's/^ZELPORT_INSTALLER_VERSION=//p' install.sh)
+          uninstaller_version=$(sed -n 's/^ZELPORT_UNINSTALLER_VERSION=//p' uninstall.sh)
+          test "$installer_version" = "$uninstaller_version"
+          test "$GITHUB_REF_NAME" = "v${installer_version}"
           make check
           make release-assets
           (cd dist && sha256sum --check SHA256SUMS)
           gh release create "$GITHUB_REF_NAME" \
-            dist/install.sh dist/SHA256SUMS \
+            dist/install.sh dist/uninstall.sh dist/SHA256SUMS \
             --verify-tag \
             --title "Zelport Installer ${GITHUB_REF_NAME}"
       - name: Download the published release assets

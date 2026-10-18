@@ -20,12 +20,20 @@ class ReleaseSyncTests(unittest.TestCase):
         self.release = self.root / 'release'
         self.release.mkdir()
         self.script = b'#!/usr/bin/env bash\nZELPORT_INSTALLER_VERSION=20261018.2\nprintf ok\\n\n'
+        self.uninstaller = b'#!/usr/bin/env bash\nZELPORT_UNINSTALLER_VERSION=20261018.2\nprintf ok\\n\n'
         (self.release / 'install.sh').write_bytes(self.script)
-        digest = hashlib.sha256(self.script).hexdigest()
-        (self.release / 'SHA256SUMS').write_text(f'{digest}  install.sh\n')
+        (self.release / 'uninstall.sh').write_bytes(self.uninstaller)
+        self.write_manifest()
         self.website = self.root / 'website-install.sh'
         self.website.write_bytes(b'old installer\n')
         self.output = self.root / 'github-output'
+
+    def write_manifest(self):
+        installer_digest = hashlib.sha256(self.script).hexdigest()
+        uninstaller_digest = hashlib.sha256(self.uninstaller).hexdigest()
+        (self.release / 'SHA256SUMS').write_text(
+            f'{installer_digest}  install.sh\n{uninstaller_digest}  uninstall.sh\n'
+        )
 
     def run_helper(self, version=VERSION):
         return subprocess.run([
@@ -86,13 +94,14 @@ class ReleaseSyncTests(unittest.TestCase):
                 if mutation == 'extra':
                     path.unlink()
                 else:
-                    digest = hashlib.sha256(self.script).hexdigest()
-                    path.write_text(f'{digest}  install.sh\n')
+                    self.write_manifest()
 
     def test_multiple_manifest_entries_are_rejected(self):
-        digest = hashlib.sha256(self.script).hexdigest()
+        installer_digest = hashlib.sha256(self.script).hexdigest()
+        uninstaller_digest = hashlib.sha256(self.uninstaller).hexdigest()
         (self.release / 'SHA256SUMS').write_text(
-            f'{digest}  install.sh\n{digest}  install.sh\n'
+            f'{installer_digest}  install.sh\n{uninstaller_digest}  uninstall.sh\n'
+            f'{installer_digest}  install.sh\n'
         )
         result = self.run_helper()
         self.assertNotEqual(result.returncode, 0)
@@ -101,8 +110,8 @@ class ReleaseSyncTests(unittest.TestCase):
     def test_release_version_must_match_argument_and_script_once(self):
         self.assertNotEqual(self.run_helper('20261018.3').returncode, 0)
         (self.release / 'install.sh').write_bytes(self.script + b'ZELPORT_INSTALLER_VERSION=20261018.2\n')
-        digest = hashlib.sha256((self.release / 'install.sh').read_bytes()).hexdigest()
-        (self.release / 'SHA256SUMS').write_text(f'{digest}  install.sh\n')
+        self.script = (self.release / 'install.sh').read_bytes()
+        self.write_manifest()
         self.assertNotEqual(self.run_helper().returncode, 0)
         self.assertEqual(self.website.read_bytes(), b'old installer\n')
 

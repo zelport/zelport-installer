@@ -1,7 +1,7 @@
 # Releasing Zelport Installer
 
-`install.sh` is the only editable installer source. The website copy is
-generated from a verified release asset and must not be edited or synchronized
+`install.sh` and `uninstall.sh` are the editable sources. The website copies are
+generated from verified release assets and must not be edited or synchronized
 from an untagged branch. Versioning rules are documented in
 [README.md](README.md#versioning).
 
@@ -19,5 +19,6 @@ install packages or modify a running Zelport App. Native distribution and
 systemd verification remain separate release checks.
 
 The release workflow accepts only a matching `vYYYYMMDD.N` tag, reruns the
-checks, builds `dist/install.sh` and `dist/SHA256SUMS`, and publishes those exact
-files. Website synchronization is a separate verified release step.
+checks, builds `dist/install.sh`, `dist/uninstall.sh`, and `dist/SHA256SUMS`, and
+publishes those exact files. Website synchronization is a separate verified
+release step.

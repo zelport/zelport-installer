@@ -1,8 +1,8 @@
 # Zelport Installer
 
-`install.sh` is a Bash script that runs preflight checks, installs Zelport App
-where direct installation is supported, and otherwise provides platform-specific
-installation guidance and tips.
+`install.sh` and `uninstall.sh` are Bash scripts for installing and removing
+Zelport App. They run preflight checks, perform supported operations, and
+otherwise provide platform-specific guidance and tips.
 
 ## Install
 
@@ -38,6 +38,25 @@ bash install.sh --reinstall
 
 Downloaded application archives and Arch package recipes are checked before
 installation.
+
+## Uninstall
+
+Run the uninstaller as your regular user:
+
+```sh
+curl -fsSL https://zelport.com/uninstall.sh | bash
+```
+
+The default configuration and state files are preserved. Use `--help` to list
+the available options or remove the preserved files explicitly with `--purge`:
+
+```sh
+curl -fsSL https://zelport.com/uninstall.sh | bash -s -- --help
+curl -fsSL https://zelport.com/uninstall.sh | bash -s -- --purge
+```
+
+On Arch Linux and Omarchy, the uninstaller removes the package through `pacman`.
+On macOS, it shows the corresponding Homebrew commands without making changes.
 
 ## Example output
 
@@ -82,10 +101,10 @@ Tips:
 
 ## Versioning
 
-`ZELPORT_INSTALLER_VERSION` uses `YYYYMMDD.N`, where `N` starts at 1 and
-increments for another installer release on the same date. Tags and releases
-prefix this value with `v`. Every published script change, including an App or
-Arch recipe pin update, requires a new installer version.
+`ZELPORT_INSTALLER_VERSION` and `ZELPORT_UNINSTALLER_VERSION` use `YYYYMMDD.N`,
+where `N` starts at 1 and increments for another release on the same date. Both
+values match, and tags and releases prefix them with `v`. Every published script
+change, including an App or Arch recipe pin update, requires a new version.
 
 `ZELPORT_RELEASE` is numeric SemVer without a `v`. App tags and release URLs add
 the `v` prefix. Update the App version, reviewed Arch commit, and recipe checksum

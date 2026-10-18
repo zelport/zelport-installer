@@ -2,13 +2,14 @@
 
 Write documentation, comments, errors, user-visible output, and commit messages
 in English.
-`install.sh` is the canonical editable installer source. The copy at
-`zelport-web/install.sh` is generated from an exact verified release asset.
-Never edit the website copy directly or synchronize it from an untagged branch.
+`install.sh` and `uninstall.sh` are the canonical editable sources. The copies
+in `zelport-web` are generated from exact verified release assets. Never edit
+the website copies directly or synchronize them from an untagged branch.
 
-Use `YYYYMMDD.N` for `ZELPORT_INSTALLER_VERSION` and `vYYYYMMDD.N` for installer
+Use `YYYYMMDD.N` for `ZELPORT_INSTALLER_VERSION` and
+`ZELPORT_UNINSTALLER_VERSION`, which must match, and `vYYYYMMDD.N` for installer
 tags and releases. Use numeric SemVer for `ZELPORT_RELEASE`. App tags and URLs
-add the `v` prefix. Change the installer version for every published script
+add the `v` prefix. Change both script versions for every published script
 change. Keep the App version, immutable Arch recipe commit, and measured recipe
 SHA-256 together. Never fabricate a checksum or resolve a moving App or package
 release from the installer.

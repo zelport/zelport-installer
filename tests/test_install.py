@@ -24,7 +24,7 @@ EXPECTED_BANNER = """
   ::::::::::                                                  ::::
   :::::::                                                     ::::
 
-Zelport Installer 20261018.3
+Zelport Installer 20261018.4
 """
 
 
@@ -506,7 +506,7 @@ exit 23
         piped = subprocess.run(['bash', '-s', '--', '--help'], input=(ROOT / 'install.sh').read_text(), text=True, capture_output=True)
         self.assertEqual(direct.returncode, 0, direct.stderr)
         self.assertEqual(piped.returncode, 0, piped.stderr)
-        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.3\n\nUsage:\n'))
+        self.assertTrue(piped.stdout.startswith('Zelport Installer 20261018.4\n\nUsage:\n'))
         self.assertNotIn(':::::::', piped.stdout)
         self.assertIn('Options:', piped.stdout)
         self.assertIn('Supported systems:', piped.stdout)
@@ -519,7 +519,7 @@ exit 23
             if line.startswith('ZELPORT_') and '=' in line:
                 key, value = line.split('=', 1)
                 constants[key] = value
-        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.3')
+        self.assertEqual(constants['ZELPORT_INSTALLER_VERSION'], '20261018.4')
         self.assertEqual(constants['ZELPORT_RELEASE'], '0.10.0')
         self.assertEqual(constants['ZELPORT_ARCH_REF'], '4f57dc7487503ce5b1b3eb407b6bc2032f810aac')
         self.assertEqual(constants['ZELPORT_ARCH_SHA256'], 'b1bb51677515a2db9c1612a0990ef80bd92af03e33bec1b18228029afe3febde')
@@ -543,11 +543,17 @@ exit 23
                 )
                 self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((first / 'install.sh').read_bytes(), (second / 'install.sh').read_bytes())
+            self.assertEqual((first / 'uninstall.sh').read_bytes(), (second / 'uninstall.sh').read_bytes())
             self.assertEqual((first / 'SHA256SUMS').read_bytes(), (second / 'SHA256SUMS').read_bytes())
             self.assertEqual((first / 'install.sh').stat().st_mode & 0o777, 0o755)
+            self.assertEqual((first / 'uninstall.sh').stat().st_mode & 0o777, 0o755)
             self.assertEqual((first / 'SHA256SUMS').stat().st_mode & 0o777, 0o644)
-            digest = hashlib.sha256((ROOT / 'install.sh').read_bytes()).hexdigest()
-            self.assertEqual((first / 'SHA256SUMS').read_text(), f'{digest}  install.sh\n')
+            install_digest = hashlib.sha256((ROOT / 'install.sh').read_bytes()).hexdigest()
+            uninstall_digest = hashlib.sha256((ROOT / 'uninstall.sh').read_bytes()).hexdigest()
+            self.assertEqual(
+                (first / 'SHA256SUMS').read_text(),
+                f'{install_digest}  install.sh\n{uninstall_digest}  uninstall.sh\n',
+            )
 
     def test_release_builder_refuses_symlink_outputs(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -571,11 +577,12 @@ exit 23
         self.assertIn('contents: read', workflow)
         self.assertEqual(workflow.count('\n      contents: write'), 1)
         self.assertIn('^v[0-9]{8}\\.[1-9][0-9]*$', workflow)
-        self.assertIn('test "$GITHUB_REF_NAME" = "v${source_version}"', workflow)
+        self.assertIn('test "$installer_version" = "$uninstaller_version"', workflow)
+        self.assertIn('test "$GITHUB_REF_NAME" = "v${installer_version}"', workflow)
         self.assertIn('make check', workflow)
         self.assertIn('make release-assets', workflow)
         self.assertIn('(cd dist && sha256sum --check SHA256SUMS)', workflow)
-        self.assertIn('dist/install.sh dist/SHA256SUMS', workflow)
+        self.assertIn('dist/install.sh dist/uninstall.sh dist/SHA256SUMS', workflow)
 
 
 if __name__ == '__main__':

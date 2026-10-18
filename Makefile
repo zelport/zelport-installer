@@ -4,7 +4,7 @@ DIST_DIR ?= dist
 .PHONY: check test release-assets
 
 check:
-	bash -n install.sh
+	bash -n install.sh uninstall.sh
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py' -v
 
 test:

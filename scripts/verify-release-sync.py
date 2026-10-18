@@ -10,9 +10,12 @@ import tempfile
 
 
 VERSION_RE = re.compile(r"^[0-9]{8}\.[1-9][0-9]*$")
-SCRIPT_VERSION_RE = re.compile(r"^ZELPORT_INSTALLER_VERSION=([^\r\n]+)$", re.MULTILINE)
-MANIFEST_RE = re.compile(r"^([0-9a-f]{64})  install\.sh\n$")
-ASSET_NAMES = {"install.sh", "SHA256SUMS"}
+INSTALLER_VERSION_RE = re.compile(r"^ZELPORT_INSTALLER_VERSION=([^\r\n]+)$", re.MULTILINE)
+UNINSTALLER_VERSION_RE = re.compile(r"^ZELPORT_UNINSTALLER_VERSION=([^\r\n]+)$", re.MULTILINE)
+MANIFEST_RE = re.compile(
+    r"^([0-9a-f]{64})  install\.sh\n([0-9a-f]{64})  uninstall\.sh\n$"
+)
+ASSET_NAMES = {"install.sh", "uninstall.sh", "SHA256SUMS"}
 
 
 def digest(data: bytes) -> str:
@@ -32,30 +35,38 @@ def verify_assets(release_dir: Path, version: str) -> tuple[bytes, str]:
 
     names = {entry.name for entry in release_dir.iterdir()}
     if names != ASSET_NAMES:
-        raise ValueError("release must contain exactly install.sh and SHA256SUMS")
+        raise ValueError("release must contain exactly install.sh, uninstall.sh, and SHA256SUMS")
 
-    script_path = release_dir / "install.sh"
+    installer_path = release_dir / "install.sh"
+    uninstaller_path = release_dir / "uninstall.sh"
     manifest_path = release_dir / "SHA256SUMS"
-    regular_file(script_path, "installer asset")
+    regular_file(installer_path, "installer asset")
+    regular_file(uninstaller_path, "uninstaller asset")
     regular_file(manifest_path, "checksum asset")
-    script = script_path.read_bytes()
+    installer = installer_path.read_bytes()
+    uninstaller = uninstaller_path.read_bytes()
     try:
-        source = script.decode("utf-8")
+        installer_source = installer.decode("utf-8")
+        uninstaller_source = uninstaller.decode("utf-8")
         manifest = manifest_path.read_text(encoding="ascii")
     except UnicodeError as error:
         raise ValueError("release assets must use UTF-8 script and ASCII manifest") from error
 
-    versions = SCRIPT_VERSION_RE.findall(source)
-    if versions != [version]:
-        raise ValueError("released script version does not exactly match the release tag")
+    if INSTALLER_VERSION_RE.findall(installer_source) != [version]:
+        raise ValueError("released installer version does not exactly match the release tag")
+    if UNINSTALLER_VERSION_RE.findall(uninstaller_source) != [version]:
+        raise ValueError("released uninstaller version does not exactly match the release tag")
     match = MANIFEST_RE.fullmatch(manifest)
     if not match:
-        raise ValueError("SHA256SUMS must contain exactly one install.sh entry")
+        raise ValueError("SHA256SUMS must contain exactly one entry for each script")
 
-    actual = digest(script)
-    if match.group(1) != actual:
+    installer_digest = digest(installer)
+    uninstaller_digest = digest(uninstaller)
+    if match.group(1) != installer_digest:
         raise ValueError("released install.sh does not match SHA256SUMS")
-    return script, actual
+    if match.group(2) != uninstaller_digest:
+        raise ValueError("released uninstall.sh does not match SHA256SUMS")
+    return installer, installer_digest
 
 
 def replace_website_script(path: Path, script: bytes) -> tuple[str, bool]:
