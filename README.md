@@ -12,8 +12,9 @@ Run the installer as your regular user:
 curl -fsSL https://zelport.com/install.sh | bash
 ```
 
-Do not run the installer with `sudo`. On Arch Linux and Omarchy, `makepkg` may
-request your password when pacman installs packages or dependencies.
+Do not run the installer as root or with `sudo`. On Arch Linux and Omarchy,
+`makepkg` may request your password when pacman installs packages or
+dependencies.
 
 ## Supported systems
 
@@ -48,7 +49,7 @@ increments for another installer release on the same date. Tags and releases
 prefix this value with `v`. Every published script change, including an App or
 Arch recipe pin update, requires a new installer version.
 
-`ZELPORT_RELEASE` is numeric SemVer without a `v`; App tags and release URLs add
+`ZELPORT_RELEASE` is numeric SemVer without a `v`. App tags and release URLs add
 the `v` prefix. Update the App version, reviewed Arch commit, and recipe checksum
 together only after the corresponding App artifacts and packaging commit exist.
 Never move a published tag or replace released assets.
