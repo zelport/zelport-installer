@@ -71,6 +71,7 @@ class ReleaseAutomationTests(unittest.TestCase):
         release_job = workflow.split("\n  release:", 1)[1]
         self.assertNotIn("make release-assets", release_job)
         self.assertIn("make verify-release-assets", release_job)
+        self.assertIn("--generate-notes", release_job)
         self.assertIn("cmp dist/install.sh released/install.sh", release_job)
         self.assertIn("retention-days: 1", workflow)
 

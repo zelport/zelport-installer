@@ -62,6 +62,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             dist/install.sh dist/uninstall.sh dist/SHA256SUMS \
             --verify-tag \
+            --generate-notes \
             --title "Zelport Installer ${GITHUB_REF_NAME}"
       - name: Download the published release assets
         shell: bash
