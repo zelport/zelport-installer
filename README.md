@@ -59,57 +59,11 @@ bash uninstall.sh --purge
 On Arch Linux and Omarchy, the uninstaller removes the package through `pacman`.
 On macOS, it shows the corresponding Homebrew commands without making changes.
 
-## Example output
-
-A binary installation in a Linux container without systemd looks like this:
-
-```text
-  :::::::
-  ::::::::::
-  :::::::::::::                                           ::::
-  ::::::::::::::::                                        ::::                                ::::
-  ::::::::::::::::::                 :::::::::: ::::::::  :::::::::::::::   :::::::: :::::::::::::::
-  ::::::::::::::::::::::             :::::::::::::::::::: ::::::::::::::::::::::::::::::::::::::::::
-  ::::::::::::::::::::::                ::::: :::::::::::::::::::::   ::::::::   :::::::::    ::::
-  ::::::::::::::::::                   :::::  ::::::::::::::::::::    ::::::::   :::::::::    ::::
-  ::::::::::::::::                   :::::::::::::::::::::::::::::::::::::::::::::::::::::    ::::::
-  :::::::::::::                      :::::::::: ::::::::: :::::::::::::::  ::::::::: :::::    ::::::
-  ::::::::::                                                  ::::
-  :::::::                                                     ::::
-
-Zelport Installer <installer-version>
-
-Preflight checks:
-  Host: Linux (ubuntu)
-  Architecture: arm64
-  Init system: none detected (container)
-  Installation method: binary
-  Privileges: regular user
-  Service manager: systemd user manager unavailable (systemctl not found)
-
-Progress:
-  Installing Zelport <app-version> from the arm64 release archive.
-
-Result:
-  Zelport <app-version> was installed successfully at /home/user/.local/bin/zelport
-  No reachable systemd user manager. Automatic startup was not configured.
-
-Tips:
-  Configuration file: /home/user/.config/zelport/config.json
-  Default URL: http://localhost:8080
-  Start Zelport manually: /home/user/.local/bin/zelport
-```
-
 ## Versioning
 
 `ZELPORT_INSTALLER_VERSION` and `ZELPORT_UNINSTALLER_VERSION` use
-`YYYY.MM.MICRO`. `MICRO` starts at `0` each month and increments for every
-additional release in that month. Both values match, and tags and releases
-prefix them with `v`, for example `v2026.10.0`. Every published script change
-requires a new version. App releases use SemVer and are resolved independently
-through the latest stable GitHub release. Never move a published tag or replace
-released assets.
-
-Maintainer instructions are in [RELEASING.md](RELEASING.md).
+`YYYY.MM.MICRO`, must match, and are prefixed with `v` in tags and releases.
+App releases use independent SemVer and are resolved at runtime. See
+[RELEASING.md](RELEASING.md) for the complete maintainer policy.
 
 Licensed under the [MIT License](LICENSE).
