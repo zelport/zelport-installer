@@ -28,3 +28,8 @@ preflight, builds `dist/install.sh`, `dist/uninstall.sh`, and `dist/SHA256SUMS`
 once, and passes those verified bytes to the publication job. After publication,
 `make verify-published-release` independently checks the public release. Website
 synchronization is a separate verified release step.
+
+Always record and pass the canonical `vYYYY.MM.MICRO` release identifier. The
+workflow alone derives the prefix-free value embedded in both scripts. A new
+Zelport App `vMAJOR.MINOR.PATCH` release does not require a new Installer release
+while the scripts continue to resolve the latest stable App dynamically.

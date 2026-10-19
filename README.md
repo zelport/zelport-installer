@@ -61,9 +61,11 @@ On macOS, it shows the corresponding Homebrew commands without making changes.
 
 ## Versioning
 
-`ZELPORT_INSTALLER_VERSION` and `ZELPORT_UNINSTALLER_VERSION` use
-`YYYY.MM.MICRO`, must match, and are prefixed with `v` in tags and releases.
-App releases use independent SemVer and are resolved at runtime. See
+The canonical Installer release identifier is `vYYYY.MM.MICRO`. Use that form
+in documentation, commands, tags, GitHub Releases and reports. The embedded
+`ZELPORT_INSTALLER_VERSION` and `ZELPORT_UNINSTALLER_VERSION` fields contain the
+derived `YYYY.MM.MICRO` payload and must match. App releases use independent
+canonical `vMAJOR.MINOR.PATCH` identifiers and are resolved at runtime. See
 [RELEASING.md](RELEASING.md) for the complete maintainer policy.
 
 Licensed under the [MIT License](LICENSE).

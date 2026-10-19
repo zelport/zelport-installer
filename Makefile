@@ -1,11 +1,19 @@
 PYTHON ?= python3
 DIST_DIR ?= dist
 
-.PHONY: check test version verify-version verify-app-release release-ready release-assets verify-release-assets verify-published-release
+.DEFAULT_GOAL := check
+.PHONY: help check verify test version verify-version verify-app-release release-ready release-assets verify-release-assets verify-published-release
+
+help:
+	@printf '%s\n' 'make check' 'make verify' 'make release-ready' 'make verify-published-release'
 
 check:
 	bash -n install.sh uninstall.sh
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py' -v
+
+verify: check verify-version
+	$(MAKE) release-assets
+	$(MAKE) verify-release-assets
 
 test:
 	$(PYTHON) -m unittest discover -s tests -p 'test_*.py' -v

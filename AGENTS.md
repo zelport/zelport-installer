@@ -6,14 +6,16 @@ in English.
 in `zelport-web` are generated from exact verified release assets. Never edit
 the website copies directly or synchronize them from an untagged branch.
 
-Use `YYYY.MM.MICRO` for `ZELPORT_INSTALLER_VERSION` and
-`ZELPORT_UNINSTALLER_VERSION`, which must match, and `vYYYY.MM.MICRO` for
-installer tags and releases. `MICRO` starts at `0` each month and increments for
-each additional release in that month. Change both script versions for every
-published script change. Resolve the latest stable App release at runtime from
-its published `SHA256SUMS`, validate its numeric SemVer, and download remaining
-assets from that exact version tag. Never fabricate a checksum or use draft or
-prerelease assets.
+The canonical Installer release identifier is `vYYYY.MM.MICRO`. Use it in
+documentation, operator inputs, workflow dispatches, tags, GitHub Releases and
+reports. The embedded `ZELPORT_INSTALLER_VERSION` and
+`ZELPORT_UNINSTALLER_VERSION` fields are derived payloads without `v` because
+their script format requires it; they must match. `MICRO` starts at `0` each
+month and increments for each additional release in that month. Change both
+script fields for every published script change. Resolve the latest stable App
+release at runtime from its published `SHA256SUMS`, validate its canonical
+`vMAJOR.MINOR.PATCH` tag, and download remaining assets from that exact release.
+Never fabricate a checksum or use draft or prerelease assets.
 
 Preserve existing Zelport configuration and custom services. Manage only the
 Zelport service owned by the selected installation method. Never stop unrelated
